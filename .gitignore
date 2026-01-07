@@ -1,4 +1,3 @@
 output/*
 *.swp
-private/
-/copytoken.sh
+__pycache__/
