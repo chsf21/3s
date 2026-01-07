@@ -1,3 +1,4 @@
 output/*
 *.swp
 private/
+/copytoken.sh
