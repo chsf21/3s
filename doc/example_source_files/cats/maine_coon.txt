@@ -1,0 +1,8 @@
+TITLE=Maine Coon
+DATE=01/07/26
+C=cats,pets
+NUMBER=4
+
+(START)
+The Maine Coon is a large domesticated cat breed. One of the oldest natural breeds in North America, it originated in the U.S. state of Maine, where it is the official state cat. The Maine Coon is a large and social cat, commonly referred to as "the gentle giant."
+(STOP)

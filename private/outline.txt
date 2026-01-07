@@ -1,0 +1,34 @@
+# The general flow of information from of information from source files to blog page is like:
+# source_file => dict => object => post template => page template
+
+Import config variables
+
+For each file in source_dir, enter it as an argument into __init__ of Post class. That __init__ parses the different fields of the source file and places them in attributes (the filename is also put into an attribute). The created object should be saved in an array post_files[], which will then be sorted (see later).
+Run get_data on every file, an object is generated for each file, and each file's metadata is stored in the object's attributes.
+
+page_template = pagetemplate.html
+post_template = posttemplate.html
+
+post_files[] = empty array
+
+cp page_template.html index.html
+current_page = index.html
+
+(See how to sort objects by attribute here: https://stackoverflow.com/questions/403421/how-do-i-sort-a-list-of-objects-based-on-an-attribute-of-the-objects)
+If sorting by metadata DATE or NUMBER:
+    Sort by DATE or NUMBER and save list of corresponding filenames to post_files[]
+    If "lowest to highest" / "oldest to newest" option is selected:
+        Do nothing
+    Else:
+        Reverse the order of the list
+
+If sorting by numbered filenames
+    Get list of filenames in post files dir
+    If "lowest to highest" / "oldest to newest" option is selected:
+        Sort list of filenames from lowest to highest. Save in post_files[]
+    Else:
+        Sort from highest to lowest. Save in post_files[]
+
+
+Run insert_post (which subsequently runs format_post)
+

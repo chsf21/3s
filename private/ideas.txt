@@ -1,0 +1,66 @@
+Examples of the following should be included with the program: page template, post template, blogpost source file (with notes on how it should be formatted written in the body.)
+Config variables should be stored in a separate file and imported into the program (at the program's beginning). Among these variables should be "path to blogpost source files directory", "path to output directory", "path to page template", "path to post template".
+These config variables should have default values, and those default values should be made clear in the documentation so that users who choose to use default values will name their files and directories accordingly.
+# Tip: If you would like to use this static site generator for creating multiple websites, simply create multiple versions of this config file, each with its own unique values for OutPutDirectory, SourceDirectory, PageTemplate, and PostTemplate. Then run the generator using command line options for specifying which config file to use: python3 generator.py --config="~/path/to/config.ini"
+
+When run with --help, should display all command line arguments. Should also give link to documentation on how to set up templates, source files, config file, directory structure.
+Should be able to specify location of config file using config=[path/to/config]
+
+Feed a template file for what each page of the blog will look like.
+Put POSTHERE in the template wherever you want a blog post to appear.
+The amount of POSTHERE's on the template page determines how many blog posts will be displayed per page.
+The template can contain PAGENUMBER, which will be substituted with the page number in integer form. An example of this being used on the template might be: <h2>Page #<h2>PAGENUMBER
+
+Blog posts are written in text files that are named after their post numbers in sequential order. So the first blog post has the filename "1", the second, "2"...
+A list of these files will be used in the function that finds and replaces POSTHERE with blog posts.
+Since the blog posts will be displayed from newest to oldest, the list of blog post files should be saved in *reverse order*. (Alternatively a website with blog posts from oldest to newest can be made by not saving the list in reverse order. Set a command line option for this.)
+(Alternatively, the text files are named arbitrarily--after their topic, for example. And a tag inside of the text file keeps track of the post number--NUMBER. Or they are sorted by date, which is probably going to be used by more people. This can be a command line option for the generator. If either of these options are selected by the user, then get_data will need to be run on every text file before any finding and replacing is done. This is to gather the metadata NUMBER or DATE -- depending on which option was selected. They are then sorted based on that metadata and saved in the list of blog post files) (The "oldest to newest" / "lowest to highest" command line option that I mentioned above can also be used in combination with these.)
+(In summary, there are three ways of sorting the files: metadata DATE, metadata NUMBER, filename number. This should default to date. The user can change which one he wants to use by using command-line arguments. The user can also choose to sort from "lowest to highest" / "oldest to newest" by entering a command line argument--this works with all 3 sorting methods.)
+
+A template file for what each HTML blog post will look like is needed (in addition to the template for each page).
+Values that can be used in this template for find and replace are:
+TITLE
+DATE
+CATEGORY
+NUMBER
+BODY
+
+Function format_post:
+Remember to parse newlines and replace them with <br>
+Formatting the blog template using that object's entry's data (done in a temp file)--Insert value for TITLE into TITLE, insert DATE into DATE, insert NUMBER into NUMBER, insert BODY into BODY. * represents italics, ** is bold.
+Chatgpt suggested:
+Always process ** before *
+Only treat * as formatting if:
+it’s paired or it’s not escaped (\*)
+Newlines become:
+<br> inside paragraphs
+<p> between blank lines
+Ignore formatting inside code blocks (later feature)
+
+Function, insert_post:
+Finds the next occurance of POSTHERE on current_page.
+If there is another occurance of POSTHERE on the page: Look at the current first item in post_files[]. Then run format_post using that object. Replace POSTHERE with the temp file that was created by format_post.
+If there is no other occurance of POSTHERE, create a new page (creating a copy of the template) and update that to be current_page
+(An alternate version of this function would be: At the start of the script, count how many POSTHERE's are present in the page template. Then insert_post enters a FOR loop--for [num of POSTHERE on template], format_post and find and replace... Have a counter that keeps track of how many times find and replace was done. If counter ==  [num of POSTHERE on template], a new page is created and is set to current_page. This is probably not any faster than the method I proposed above. Both methods will need to *search* for POSTHERE either way--when doing find and replace--so there's no need to keep track of how many POSTHERE's are left on a page... we're going to be searching for them anyway)
+
+-----------------------------------------------------
+Function, get_data:
+Enter filename into object
+Search for following metadata. If encountered, enter it into a object. (Maybe a constructor for the Post class handles parsing. The constructor accepts a filename, then it parses the information and assigns it to object attributes)
+TITLE=My Title
+DATE=mm/dd/yy [24:24] (note that 0's should be included. so it should look like 01/02/2026 and not 1/2/2026) (optionally include hour and minute. Should be in 24 hour format)
+C=category1,category2,category3
+NUMBER=x (Only used if the option for manually numbering posts in metadata is enabled--rather than sorting by filename number or by date.)
+(START)
+Between these two tags is the text that will be entered as the value for the object attribute BODY
+(STOP)
+
+*italics*
+**bold**
+
+-----------------------------------------------------
+
+Before the function insert_post is called, an index.html should be created and set as current_page
+
+Later on you should add a feature that creates pages for individual categories. And you should have a sidebar with hyperlinks to years (jump to first post of a certain year), months. Hyperlinks to categories page too on sidebar. The hyperlinks to categories should also be available in a post that uses a template with CATEGORY.
+Chatgpt suggested using objects instead of json for storing the metadata that will be used in format_post. This is cleaner and easier to use than json, requires less parsing... However it did say that you could do a hybrid (json + objects). Use objects for functions like format_post, then export the data to json to create a cache. *But* using a cache is probably not worth it. Modern hardware can quickly parse every file again on every run and there wouldn't be much of a loss in speed. It would only be worthwhile to use a cache if the parsing logic is very intensive with many rules.

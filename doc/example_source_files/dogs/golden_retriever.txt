@@ -1,0 +1,9 @@
+TITLE=Golden Retriever
+DATE=01/05/26 15:00
+iost_objects.sort(key=lambda x: datetime.datetime.strptime(x.date, '%m/%d/%y'))
+C=dogs,pets
+NUMBER=1
+
+(START)
+The Golden Retriever is a friendly breed of dog. It is renown for being great with children and is thus a common choice for families. Golden Retrievers need plenty of exercise to stay healthy. Their typical lifespan is about twelve years, though they often live up to fourteen years and beyond.
+(STOP)
