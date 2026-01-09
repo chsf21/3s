@@ -28,7 +28,7 @@ In order to generate a website, four components are needed:
 Each source file represents one post on the generated website. They may contain metadata and body text. The following fields accept metadata when written in a source file (each on its own line):
 
 * TITLE=\[Your Title Here\]
-* DATE=\[MM/DD/YYYY\] \[Hour:Minute\] (The time field is optional and must be written in the 24-hour format)
+* DATE=\[MM/DD/YYYY\] \[Hour:Minute\] (Entering the hour and minute is optional. If it is used, it must be written in the 24-hour format. It is possible to include the time in some source files while excluding it in others.)
 * CATEGORIES=\[category1,category2,category3\]
 * NUMBER=\[x\] (This field is optional. In it an integer can be entered. This integer will become associated with this source file and can be used for designating the order in which posts appear on the generated website. See section [The Python script](#the-python-script-command-line-options) below.)
 
