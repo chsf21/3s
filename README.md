@@ -25,7 +25,7 @@ Each source file represents one post on the generated website. They may contain 
 Body text is written as:
 ```
 (START)
-[Body Text]
+Body Text
 (STOP)
 ```
 
