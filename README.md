@@ -14,7 +14,7 @@ I strongly recommend reading through them to get acquainted with the script. For
 
 [The configuration file](#the-configuration-file)
 
-[The Python script](#the-python-script)
+[The Python script: Command line options](#the-python-script:-command-line-options)
 
 ## Overview
 In order to generate a website, four components are needed:
@@ -30,7 +30,7 @@ Each source file represents one post on the generated website. They may contain 
 * TITLE=\[Your Title Here\]
 * DATE=\[MM/DD/YYYY\] \[Hour:Minute\] (The time field is optional and must be written in the 24-hour format)
 * CATEGORIES=\[category1,category2,category3\]
-* NUMBER=\[x\] (This field is optional. In it an integer can be entered. This integer will become associated with this source file and can be used for designating the order in which posts appear on the generated website. See section [The Python script](#the-python-script) below.)
+* NUMBER=\[x\] (This field is optional. In it an integer can be entered. This integer will become associated with this source file and can be used for designating the order in which posts appear on the generated website. See section [The Python script](#the-python-script:-command-line-options) below.)
 
 Body text is written as:
 ```
@@ -63,7 +63,7 @@ This is what (POST) on the page template will be replaced with. For this reason,
 
 Keywords that may be entered in this file are:
 
-* (NUMBER) - Replaced with the post number. By default, the first post displayed on the site is treated as the final post and assigned the highest post number (unless the reverse option -r is used. See section [The Python script](#the-python-script) below.) (Note that this is not necessarily the same number as the metadata number mentioned above. Also see section [The Python script](#the-python-script).)
+* (NUMBER) - Replaced with the post number. By default, the first post displayed on the site is treated as the final post and assigned the highest post number (unless the reverse option -r is used. See section [The Python script](#the-python-script:-command-line-options) below.) (Note that this is not necessarily the same number as the metadata number mentioned above. Also see section [The Python script](#the-python-script:-command-line-options).)
 * (TITLE) - The title that was assigned to a post in its source file
 * (DATE) - The date that was assigned to a post in its source file
 * (CATEGORIES) - The categories that were assigned to a post in its source file
@@ -117,7 +117,7 @@ The user can also use a command line option when running the script to specify t
 
 The configuration file that comes bundled with this software uses paths to example source files and example templates. You can test that the program is working properly using these configuration file values. Afterwards, edit the configuration file to your preferences.
 
-## The Python script
+## The Python script: Command line options
 
 Upon running the script, all source files will be sorted and then inserted into HTML pages. By default posts will be sorted by date from newest to oldest. This provides the usual behavior of a blog: new posts are displayed at the top of the site's front page.
 
