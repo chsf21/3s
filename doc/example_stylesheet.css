@@ -1,0 +1,28 @@
+/* These elements are found in example_page_template.html */
+body {
+	background-color: CadetBlue;
+}
+
+div.posts {
+	background-color: white;
+	width: 60%;
+	margin: auto;
+}
+
+#welcome {
+	width: 50%;
+	margin-left: auto;
+	margin-right: auto;
+	margin-top: 30px;
+	margin-bottom: 50px;
+	text-align: center;
+	background-color: white;
+	border: 4px solid black;
+}
+
+/* This elements are found in example_post_template.html */
+div.post {
+	border: 2px solid black;
+}
+
+

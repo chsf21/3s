@@ -1,0 +1,8 @@
+TITLE=Foldex
+DATE=01/08/26
+C=cats,pets
+NUMBER=
+
+(START)
+The Foldex cat, also known as the Exotic Fold, is a cat breed developed in the Canadian province of Quebec by crossbreeding a Scottish Fold and an Exotic Shorthair. Foldexes are medium-sized cats with a rounded face, short legs, and sometimes folded ears; while the latter are intended to be the defining feature of the breed, only about 50% of them exhibit it. The eyes are rounded, the ears small, and the body stout like that of Scottish Fold, with a short face between those of the two originating breeds. The coat may be of any length, colour, and pattern.
+(STOP)

@@ -6,20 +6,26 @@ import os
 import sys, getopt
 import configparser
 import datetime
+import shutil
 from operator import attrgetter
 
 ### Handle command line options/arguments
 args = sys.argv[1:]
 short_options = "tnfrc:"
-long_options = ["sort-by-title", "sort-by-number", "sort-by-filename", "reverse", "config="]
+long_options = ["sort-by-title", "sort-by-number", "sort-by-filename", "reversed", "config="]
 try:
     arguments, trailing = getopt.getopt(args, short_options, long_options)
 except getopt.GetoptError as err:
     print(err)
     sys.exit(2)
 
-config = "config.ini"
-config_path = os.path.abspath(config)
+# By default search for config in the same directory as where this script is located.
+# If the user is already in the directory where the config and script are located (and therefore root==""), then don't add a "/" before "config.ini"
+root = os.path.dirname(sys.argv[0])
+if root == "":
+    config = "config.ini"
+else:
+    config = root + "/config.ini"
 
 reverse_mode = True
 file_mode = False
@@ -32,14 +38,16 @@ for option, value in arguments:
         title_mode = True
     elif option in ("-n", "--sort-by-number"):
         number_mode = True
-    elif option in ("-r", "--reverse"):
+    elif option in ("-r", "--reversed"):
+        # Reverse mode: First post appears first on the site
+        # Without reverse mode (default): Last post appears first on the site
         # The value of reverse_mode will be passed into the sort() method's reverse= parameter. Although it may seem counterintuitive, reverse_mode *disables* sort's reverse feature. This is because the default behavior should generate a blog with posts from newest to oldest, which would require the sort() reverse= paramater to be True.
         reverse_mode = False
     elif option in ("-f", "--sort-by-filename"):
         file_mode = True
 
-
 config = os.path.abspath(config)
+print(config)
 
 ### Import values from config file. 
 if not os.path.isfile(config):
@@ -53,43 +61,54 @@ iniparser.read(config)
 def validate_config(config, section, keys):
     for key in keys:
         if not iniparser.has_option(section, key):
-            print(f"The option {key} is missing from the config file: {config_path}")
+            print(f"The option {key} is missing from the config file: {config}")
 ## Add link to documentation here
             print(f"For information on how to set up and write the config file, please see the documentation at: [link to documentation]")
             sys.exit(2)
 
-validate_config(config, 'Paths', ['OutputDirectory', 'SourceDirectory', 'PageTemplate', 'PostTemplate'])
+validate_config(config, 'Paths', ['OutputDirectory', 'SourceDirectory', 'PageTemplate', 'PostTemplate', 'NavigationTemplate'])
 
-# Check if paths specified in config file point to existing files and directories.
-def validate_path(config, section, key, item_name, is_directory):
-    path = os.path.expanduser(iniparser[section][key])
+# Get paths (by expanding them properly into absolute paths). Check if paths specified in config file point to existing files and directories.
+def get_path(config, section, key, item_name, is_directory):
+    # If a relative path was written in the config file, interpret it relative to the location of the config file.
+    if not iniparser[section][key].startswith('/') or not iniparser[section][key].startswith('~'):
+        path = os.path.dirname(config) + "/" +  iniparser[section][key]
+    else:
+        path = os.path.expanduser(iniparser[section][key])
     exists = os.path.isdir(path) if is_directory else os.path.isfile(path)
     if exists:
-        # Paths are saved as absolute. This may come at some cost to memory when later on when saving a list of file paths to source_files. However, the concreteness that is gained from using absolute paths may be worth the increased memory size, especially on modern computers.
+        # Paths are saved as absolute. This may come at some cost to memory when saving a very large list of file paths to source_files. However, the concreteness that is gained from using absolute paths may be worth the increased memory size, especially on modern computers.
         path = os.path.abspath(path)
-        return path
+        if is_directory:
+            return path + "/"
+        else:
+            return path
     else:
         print(f"Could not find the {item_name} at: {path}")
-        print(f"Config file in which the location of the {item_name} was specified: {config_path}")
-        print(f"Please ensure that the location specified in the config file represents the true location of the {item_name}.")
+        print(f"Config file in which the location of the {item_name} was specified: {config}")
+        print(f"Please ensure that the location specified in the config file represents the true location of the {item_name}.\n")
+        print("Also note that relative paths specified in the config file will be interpreted relative to the location of the config file.")
         sys.exit(2)
 
-output_dir = validate_path(config, 'Paths', 'OutputDirectory', "output directory", is_directory=True)
-source_dir = validate_path(config, 'Paths', 'SourceDirectory', "source directory", is_directory=True)
-page_template = validate_path(config, 'Paths', 'PageTemplate', "page template", is_directory=False)
-post_template = validate_path(config, 'Paths', 'PostTemplate', "post template", is_directory=False)
+output_dir = get_path(config, 'Paths', 'OutputDirectory', "output directory", is_directory=True)
+source_dir = get_path(config, 'Paths', 'SourceDirectory', "source directory", is_directory=True)
+page_template = get_path(config, 'Paths', 'PageTemplate', "page template", is_directory=False)
+post_template = get_path(config, 'Paths', 'PostTemplate', "post template", is_directory=False)
+navigation_template = get_path(config, 'Paths', 'NavigationTemplate', "navigation template", is_directory=False)
 
 ### Create objects for blog posts located in source_dir
 ### Source files will be parsed for metadata and body text, which will then be saved in object properties
 post_objects = list()
+number = 1
 class BlogPost:
-    def __init__(self, filename, title, date, categories, number, body):
+    def __init__(self, filename, title, date, categories, meta_number, body):
         self.filename = filename
         self.title = title
         self.date = date
         self.categories = categories
-        self.number = number
+        self.meta_number = meta_number
         self.body = body
+        self.number = number
 
 # Traverse the source_dir recursively and save files to source_files list
 # Symlinks are not followed to prevent an error where os.walk enters an infinite loop
@@ -117,25 +136,29 @@ in_body = False
 for file in source_files:
     if os.path.getsize(file) == 0:
         continue
-    f = open(file, "r")
-    for l in f:
-        if l.startswith("(STOP)") or l.startswith("(END)"):
-            in_body = False
-            continue
-        elif l.startswith("(START)"):
-            in_body = True
-            data["body"] = ""
-            continue
-        elif in_body:
-            data["body"] += l
-            continue
-        get_value(l, "TITLE=", "title")
-        get_value(l, "C=", "categories")
-        get_value(l, "DATE=", "date")
-        get_value(l, "NUMBER=", "number")
-    f.close()
+    with open(file, "r") as f:
+        ## Handle errors caused by having two "tags" on the same line
+        ## Print an appropriate error message. If you can, it's even better to make it so that (START) and (STOP) don't need to be on their own lines.
+        for l in f:
+            if l.startswith("(STOP)") or l.startswith("(END)"):
+                in_body = False
+                continue
+            elif l.startswith("(START)"):
+                in_body = True
+                data["body"] = ""
+                continue
+            elif in_body:
+                ## Add support for parsing * and ** - for italics and bold respectively.
+                ## Add support for images. Optional paramaters for floating them to the left or right. Make sure that relative paths are interpreted relative to the source file location (by getting the path of the source file, then adding the relative path to it)
+                ## Add support for code blocks
+                data["body"] += l
+                continue
+            get_value(l, "TITLE=", "title")
+            get_value(l, "C=", "categories")
+            get_value(l, "DATE=", "date")
+            get_value(l, "NUMBER=", "meta_number")
     filename = os.path.basename(file)
-    obj = BlogPost(filename, data["title"], data["date"], data["categories"], data["number"], data["body"])
+    obj = BlogPost(filename, data["title"], data["date"], data["categories"], data["meta_number"], data["body"])
     post_objects.append(obj)
     data.clear()
 
@@ -144,7 +167,7 @@ for file in source_files:
 if file_mode:
     post_objects.sort(key=attrgetter("filename"), reverse=reverse_mode)
 elif number_mode:
-    post_objects.sort(key=attrgetter("number"), reverse=reverse_mode)
+    post_objects.sort(key=attrgetter("meta_number"), reverse=reverse_mode)
 elif title_mode:
     post_objects.sort(key=attrgetter("title"), reverse=reverse_mode)
 # Converts date to datetime object for sorting by date. These are then deleted.
@@ -162,4 +185,88 @@ else:
     for obj in post_objects:
         del obj.date_dt
 
-# Set up a function that creates a temp copy of post_template and finds and replaces values in the template with fields of the current object. This function is called format_post in the outline and ideas textfiles
+### Assign post numbers to all objects (numbers reflect the actual order of posts in the list post_objects. 
+# This is different from meta_number, which corresponds with the optional "NUMBER=" field in source files. meta_number is used to facilitate sorting by number with -n. If the user does not sort by -n, then meta_number may not represent the actual position of an object in post_objects.)
+
+# Note: reverse_mode is False when the user selects -r (see above near beginning of file)
+if reverse_mode == False:
+    for obj in post_objects:
+        obj.number = str(number)
+        number += 1
+else:
+    for obj in reversed(post_objects):
+        obj.number = str(number)
+        number += 1
+
+### Function for finding and replacing tags in post_template with post object properties.
+
+def format_post(obj):
+    with open(post_template, "r") as f:
+        temp = f.read()
+        temp = temp.replace("(NUMBER)", obj.number)
+        temp = temp.replace("(TITLE)", obj.title)
+        temp = temp.replace("(DATE)", " ".join(obj.date))
+        temp = temp.replace("(CATEGORIES)", ", ".join(obj.categories))
+        temp_body = obj.body
+        temp_body = temp_body.replace("\n", "<br>")
+        temp = temp.replace("(BODY)", temp_body) 
+        return temp
+
+### Insert formatted posts (returned by format_post) into page_template. Create a new page when necessary.
+
+current_page = shutil.copyfile(page_template, output_dir + "index.html")
+pages = [current_page]
+page_count = 2
+obj_count = 0
+
+while obj_count < len(post_objects):
+    with open(current_page, "r") as f:
+        contents = f.read()
+        posts_per_page = contents.count("(POST)")
+    for x in range(posts_per_page):
+        if obj_count == len(post_objects):
+            break
+        contents = contents.replace("(POST)", format_post(post_objects[obj_count]), 1)
+        obj_count += 1
+    with open(current_page, "w") as f:
+        f.write(contents)
+    if obj_count == len(post_objects):
+        break
+    else:
+        new_page = output_dir + "page" + str(page_count) + ".html"
+        current_page = shutil.copyfile(page_template, new_page)
+        pages.append(new_page)
+        page_count += 1
+
+### Formatting that must be done after page creation.
+## Allow for a navigation_template to be used for replacing (NAVIGATION) in the page_template with buttons to go forward and backward.
+#for page in pages:
+#with open(navigation_template, "r") as f:
+#   navigation = read(f)
+#navigation = navigation.replace("(FORWARD)", pages[page + 1])
+#navigation = navigation.replace("(BACKWARD)", pages[page - 1])
+#with open(page, "r") as f:
+#   contents = f.read()
+#contents = contents.replace("(NAVIGATION)", navigation)
+#with open(page, "w") as f:
+#   f.write(contents)
+
+
+## Another try at nav
+#forward = "" 
+#with open(navigation_template, "r") as f:
+#    navigation = f.read()
+#    for l in f:
+#
+#        print(l)
+#        if l.find("(FORWARD)"):
+#            forward = l
+#            break
+#navigation = navigation.replace(forward, "")
+
+### Testing for format_post
+#for obj in post_objects:
+#    print(obj.filename + "\n")
+#    print("meta number " + obj.meta_number)
+#    print("post number " + obj.number)
+#    print("date ", obj.date, "\n" * 2, end="")
