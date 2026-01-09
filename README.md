@@ -69,7 +69,7 @@ Keywords that may be entered in this file are:
 * (CATEGORIES) - The categories that were assigned to a post in its source file
 * (BODY) - The post's body.
 
-**Tip:** Place id="(NUMBER)" in the post template's main <div>. This way a URL to a specific post can be shared with: https://www.website.com/[page].html#[number]
+**Tip:** Place id="(NUMBER)" in the post template's main \<div\>. This way a URL to a specific post can be shared using an "anchor link".
 
 ### Navigation template
 
