@@ -7,9 +7,13 @@ A lightweight Python script for generating static websites from textfiles and "t
 The following sections of the README will serve as a quick start guide and basic documentation, as the program is relatively simple.
 
 I strongly recommend reading through them to get acquainted with the script. For quick access and for reference, here are links to the major sections:
+
 [Source files: Writing a post][##source-files:-writing-a-post]
+
 [Templates][##templates]
+
 [The configuration file][##the-configuration-file]
+
 [The Python script][##the-python-script]
 
 ## Overview
