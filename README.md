@@ -136,7 +136,7 @@ By default the Python script will search for the configuration file named "confi
 
 ### Manually specifying the path to a configuration file
 
-The user can also use a command line option when running the script to specify the location of the configuration file. The syntax for this command line option is:
+The user can also use a command line option when running the script to specify the location of the configuration file. This will only change the configuration file for the current run of the script. The syntax for this command line option is:
 ```
 	python3 generator.py -c "path/to/config"
 	python3 generator.py --config="path/to/config"
@@ -147,7 +147,14 @@ The configuration file that comes bundled with this software uses paths to examp
 
 ## The Python script: Command line options
 
-Upon running the script, all source files will be sorted and then inserted into HTML pages. By default posts will be sorted by date from newest to oldest. This provides the usual behavior of a blog: new posts are displayed at the top of the site's front page.
+Upon running the script, all source files will be sorted and then inserted into HTML pages. Some command line options can be used to change the behavior of the script. They will be described below. The following may be used to display information about the command line options, as well:
+
+```
+python3 generator.py -h
+python3 generator.py --help
+```
+
+By default posts will be sorted by date from newest to oldest. This provides the usual behavior of a blog: new posts are displayed at the top of the site's front page.
 
 This order can be reversed (and become oldest to newest) using a command line option:
 ```

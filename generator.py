@@ -13,8 +13,8 @@ from operator import attrgetter
 ## After outputting all the necessary pages, any pages that don't appear in the list "pages" sould be deleted. This is to create the behavior of "overwriting the current version of the generated site.
 ## Not every user will want to overwrite every time the command is run. Sometimes they will want to output to a different directory without overwriting the real directory. Add command line option for outputting to a a custom directory on the fly (and not the one specified in the config file). Document the default behavior of "overwriting" all files in the output directory in README. Right afterwards include a Tip: that explains how the command line option -o can be used as a quick way to avoid overwriting and link to the documentation for the -o command line option (which is also yet to be written)
 args = sys.argv[1:]
-short_options = "tnfrc:"
-long_options = ["sort-by-title", "sort-by-number", "sort-by-filename", "reversed", "config="]
+short_options = "htnfrc:"
+long_options = ["help", "sort-by-title", "sort-by-number", "sort-by-filename", "reversed", "config="]
 try:
     arguments, trailing = getopt.getopt(args, short_options, long_options)
 except getopt.GetoptError as err:
@@ -36,6 +36,19 @@ title_mode = False
 for option, value in arguments:
     if option in ("-c", "--config"):
         config = os.path.expanduser(value)
+    elif option in ("-h", "--help"):
+        print("Usage: generator.py [OPTIONS]")
+        print("Options:")
+        print("(DEFAULT: Posts are sorted by date, newest to oldest)")
+        print("-h, --help\tPrint this help text and exit")
+        print("-t, --sort-by-title\tSort posts by title")
+        print("-f, --sort-by-filename\tSort posts by filename")
+        print("-n, --sort-by-number\tSort posts by metadata number (entered in the NUMBER= field of a source file")
+        print("-r, --reversed\tSort posts in reverse order, from lowest to highest / oldest to newest.")
+        print("-c 'path/to/config', --config='path/to/config'\tManually specify the configuration file to be used for this run of the script.")
+        ## Insert link to documentation here.
+        print("\nFor more information and a user guide, see README.md\nAvailable online at: ")
+        sys.exit(0)
     elif option in ("-t", "--sort-by-title"):
         title_mode = True
     elif option in ("-n", "--sort-by-number"):
