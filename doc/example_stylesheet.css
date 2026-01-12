@@ -7,6 +7,22 @@ div.posts {
 	background-color: white;
 	width: 60%;
 	margin: auto;
+	border: 2px solid black;
+}
+
+div.post span#post-title {
+	color: darkolivegreen;
+}
+
+div.navigation {
+	background-color: white;
+	width: 60%;
+	margin-left: auto;
+	margin-right: auto;
+	margin-top: 5px;
+	margin-bottom: 5px;
+	border: 2px solid black;
+	text-align: center;
 }
 
 #welcome {
@@ -14,15 +30,27 @@ div.posts {
 	margin-left: auto;
 	margin-right: auto;
 	margin-top: 30px;
-	margin-bottom: 50px;
+	margin-bottom: 20px;
 	text-align: center;
 	background-color: white;
 	border: 4px solid black;
 }
 
+#page-number {
+	width: 50%;
+	margin-left: auto;
+	margin-right: auto;
+	margin-top: 30px;
+	margin-bottom: 30px;
+	text-align: center;
+	background-color: white;
+	border: 2px solid black;
+}
+
+
 /* This elements are found in example_post_template.html */
 div.post {
-	border: 2px solid black;
+	margin: 5px;
 }
 
 

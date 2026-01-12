@@ -54,7 +54,8 @@ This template represents a page on the generated website. Each page that is gene
 Keywords that may be entered in this file's \<body\> are:
 
 * (POST) - Gets replaced with a single post.
-* (NAVIGATION) - Gets replaced with navigation buttons for moving between pages.
+* (NAVIGATION) - Gets replaced with navigation links for moving between pages (See section [Navigation template](#navigation-template).
+* (NUMBER) - Gets replaced with the current page number.
 
 **Tip:** For classic style webcomic sites, configure the page template to only display one post per page. This is done by writing only one (POST) on the page template.
 
@@ -73,9 +74,36 @@ Keywords that may be entered in this file are:
 
 ### Navigation template
 
-[Insert information about navigation template here...]
+This is what (POST) on the page template will be replaced with. For this reason, you may want to have it contain only one <div> with class="navigation".
 
-The template system allows users a fair amount of autonomy in how their websites will be designed. For example, keywords can be rearranged; surrounded in HTML tags like \<em\>; surrounded in a \<div\> or \<span\> which is then targeted by CSS.
+Keywords that may be entered in this file are:
+
+* (FIRST) - Will be replaced with the filename of the first page on the site.
+* (PREVIOUS) - Will be replaced with the filename of the previous page on the site.
+* (NEXT) - Will be replaced with the filename of the next page on the site.
+* (LAST) - Will be replaced with the filename of the last page on the site.
+
+All of these keywords should be used inside the href="" value of an \<a\> tag. Here is an example of a navigation template (can also be found in the doc directory):
+
+```
+<div class="navigation">
+	<a href="(FIRST)">First page</a>
+	<a href="(PREVIOUS)">Previous page</a>
+	<a href="(NEXT)">Next page</a>
+	<a href="(LAST)">Last page</a>
+</div>
+```
+
+The first page of the site will not display links for the previous or first pages of the site. This is done by deleting the entire line that contains (FIRST) or (PREVIOUS).
+Therefore, please ensure anything written on the same line as (FIRST) or (PREVIOUS) may be deleted for the first page of the site.
+
+Similarly, the last page of the site will not display links for the next or last pages of the site. The lines containing (NEXT) and (LAST) will be deleted.
+
+**Tip:** If you would like to have a \<span\> surround the \<a\> tag for (NEXT), place it on the lines above and below the \<a\> tag.
+
+### Conclusion of Templates section
+
+The template system allows users a great amount of autonomy in how their websites will be designed. For example, keywords can be rearranged; surrounded in HTML tags like \<em\>; surrounded in a \<div\> or \<span\> which is then targeted by CSS.
 
 ## The configuration file
 

@@ -10,6 +10,8 @@ import shutil
 from operator import attrgetter
 
 ### Handle command line options/arguments
+## After outputting all the necessary pages, any pages that don't appear in the list "pages" sould be deleted. This is to create the behavior of "overwriting the current version of the generated site.
+## Not every user will want to overwrite every time the command is run. Sometimes they will want to output to a different directory without overwriting the real directory. Add command line option for outputting to a a custom directory on the fly (and not the one specified in the config file). Document the default behavior of "overwriting" all files in the output directory in README. Right afterwards include a Tip: that explains how the command line option -o can be used as a quick way to avoid overwriting and link to the documentation for the -o command line option (which is also yet to be written)
 args = sys.argv[1:]
 short_options = "tnfrc:"
 long_options = ["sort-by-title", "sort-by-number", "sort-by-filename", "reversed", "config="]
@@ -47,7 +49,6 @@ for option, value in arguments:
         file_mode = True
 
 config = os.path.abspath(config)
-print(config)
 
 ### Import values from config file. 
 if not os.path.isfile(config):
@@ -213,7 +214,6 @@ def format_post(obj):
         return temp
 
 ### Insert formatted posts (returned by format_post) into page_template. Create a new page when necessary.
-
 current_page = shutil.copyfile(page_template, output_dir + "index.html")
 pages = [current_page]
 page_count = 2
@@ -238,35 +238,72 @@ while obj_count < len(post_objects):
         pages.append(new_page)
         page_count += 1
 
-### Formatting that must be done after page creation.
-## Allow for a navigation_template to be used for replacing (NAVIGATION) in the page_template with buttons to go forward and backward.
-#for page in pages:
-#with open(navigation_template, "r") as f:
-#   navigation = read(f)
-#navigation = navigation.replace("(FORWARD)", pages[page + 1])
-#navigation = navigation.replace("(BACKWARD)", pages[page - 1])
-#with open(page, "r") as f:
-#   contents = f.read()
-#contents = contents.replace("(NAVIGATION)", navigation)
-#with open(page, "w") as f:
-#   f.write(contents)
+### Format the navigation_template
+with open(navigation_template, "r") as f:
+    navigation = f.read()
 
+first = ""
+previous = ""
+nxt = ""
+last = "" 
+for line in navigation.splitlines():
+    if "(FIRST)" in line:
+        first = line
+        continue
+    elif "(PREVIOUS)" in line:
+        previous = line
+        continue
+    elif "(NEXT)" in line:
+        nxt = line
+        continue
+    elif "(LAST)" in line:
+        last = line
+        continue
 
-## Another try at nav
-#forward = "" 
-#with open(navigation_template, "r") as f:
-#    navigation = f.read()
-#    for l in f:
-#
-#        print(l)
-#        if l.find("(FORWARD)"):
-#            forward = l
-#            break
-#navigation = navigation.replace(forward, "")
+page_numbers = range(len(pages))
 
-### Testing for format_post
-#for obj in post_objects:
-#    print(obj.filename + "\n")
-#    print("meta number " + obj.meta_number)
-#    print("post number " + obj.number)
-#    print("date ", obj.date, "\n" * 2, end="")
+# Format the navigation_template appropriately
+def format_navigation(page_number):
+    formatted_nav = navigation
+    # Remove necessary lines from the formatted navigation_template
+    # The first page should not contain hyperlinks for (FIRST) or (PREVIOUS)
+    # The last page should not contain hyperlinks for (LAST) or (NEXT)
+    first_page = False
+    last_page = False
+    if page_number == 0:
+        formatted_nav = formatted_nav.replace(first, "")
+        formatted_nav = formatted_nav.replace(previous, "")
+        first_page = True
+    elif page_number == page_numbers[-1]:
+        formatted_nav = formatted_nav.replace(last, "")
+        formatted_nav = formatted_nav.replace(nxt, "")
+        last_page = True
+
+    # Replace keywords in navigation_template with appropriate values
+    if not first_page:
+        new_previous = previous.replace("(PREVIOUS)", os.path.basename(pages[page_number - 1]))
+        formatted_nav = formatted_nav.replace(previous, new_previous)
+        new_first = first.replace("(FIRST)", os.path.basename(pages[0]))
+        formatted_nav = formatted_nav.replace(first, new_first)
+    if not last_page:
+        new_nxt = nxt.replace("(NEXT)", os.path.basename(pages[page_number + 1]))
+        formatted_nav = formatted_nav.replace(nxt, new_nxt)
+        new_last = last.replace("(LAST)", os.path.basename(pages[len(pages) - 1]))
+        formatted_nav = formatted_nav.replace(last, new_last)
+    return formatted_nav
+
+### Find and replace for all remaining keywords on page_template
+### (all keywords which could not be replaced earlier in the script when the initial .html files were outputted) 
+
+# Replace (NAVIGATION) in the page_template with the result of format_navigation
+# Replace (NUMBER) in the page_template with the current page number
+def process_pages(page_number):
+    with open(pages[page_number], "r") as f:
+        contents = f.read()
+    contents = contents.replace("(NAVIGATION)", format_navigation(page_number))
+    contents = contents.replace("(NUMBER)", str(page_number + 1))
+    with open(pages[page_number], "w") as f:
+        f.write(contents)
+
+for page_number in page_numbers:
+    process_pages(page_number)
