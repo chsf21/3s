@@ -25,13 +25,17 @@ In order to generate a website, four components are needed:
 * The Python script
 
 ## Source files: Writing a post
-Each source file represents one post on the generated website. They may contain metadata and body text. The following fields accept metadata when written in a source file (each on its own line):
+Each source file represents one post on the generated website. They are plain text files and should have filenames that end with either ".txt" or no file extension (files with other file extensions will be ignored). Details of where the source files should be placed will be explained in section [The configuration file](#the-configuration-file).
+
+### Metadata
+They may contain metadata and body text. The following fields accept metadata when written in a source file (each on its own line):
 
 * TITLE=\[Your Title Here\]
 * DATE=\[MM/DD/YYYY\] \[Hour:Minute\] (Entering the hour and minute is optional. If it is used, it must be written in the 24-hour format. It is possible to include the time in some source files while excluding it in others.)
 * CATEGORIES=\[category1,category2,category3\]
 * NUMBER=\[x\] (This field is optional. In it an integer can be entered. This integer will become associated with this source file and can be used for designating the order in which posts appear on the generated website. See section [The Python script](#the-python-script-command-line-options) below.)
 
+### Body
 Body text is written as:
 ```
 (START)
@@ -40,6 +44,15 @@ Body Text
 ```
 
 Note that (START) and (STOP) must be written on their own lines. The body text should also start on its own line.
+
+Within the body, images can be inserted. This is done by writing
+
+    (IMAGE path/to/image)
+This must be placed on its own line. The path to the image should be written relative to the location of the source file. This makes it simple to write insert an image; simply place the image in the same directory as the source file and write: (IMAGE image.jpg)
+
+**Note:** The path that will be used for images in the final outputted page is an absolute path. If you are on a personal computer, this path may contain your name or other personal information.
+
+**Tip:** In order to have the image size correctly, target the \<img\> tag with CSS and use "width: 70%;" or another preferred number. For a webcomic, you may want to use "width: 100%;". In order to center the image, include in the CSS: "display: block;" and "margin: auto;"
 
 Example source files are included in the "doc" directory.
 
@@ -54,7 +67,7 @@ This template represents a page on the generated website. Each page that is gene
 Keywords that may be entered in this file's \<body\> are:
 
 * (POST) - Gets replaced with a single post.
-* (NAVIGATION) - Gets replaced with navigation links for moving between pages (See section [Navigation template](#navigation-template).
+* (NAVIGATION) - Gets replaced with navigation links for moving between pages (See section [Navigation template](#navigation-template)).
 * (NUMBER) - Gets replaced with the current page number.
 
 **Tip:** For classic style webcomic sites, configure the page template to only display one post per page. This is done by writing only one (POST) on the page template.
@@ -69,6 +82,8 @@ Keywords that may be entered in this file are:
 * (DATE) - The date that was assigned to a post in its source file
 * (CATEGORIES) - The categories that were assigned to a post in its source file
 * (BODY) - The post's body.
+
+**Note:** When writing the path of a stylesheet (or anything else) in the page template, it should be written relative to the location of the output directory. This is because the generated .html files will be located in the output directory and will search from there.
 
 **Tip:** Place id="(NUMBER)" in the post template's main \<div\>. This way a URL to a specific post can be shared using an "anchor link".
 
@@ -118,12 +133,12 @@ PostTemplate = [path/to/post_template.html]
 NavigationTemplate = [path/to/navigation_template.html]
 ```
 
-Note that paths are not put in quotes.
+Paths are not put in quotes. Files and directories specified in the configuration file will not be created automatically; they must be created manually before running the script.
 Relative paths may be used. They will be interpreted relative to the location of the configuration file.
 
 Explanation:
 
-* OutputDirectory - Where the generated site pages will be output.
+* OutputDirectory - Where the generated site pages will be output. By default, all existing .html files in this directory will be deleted upon running the script. This is in order to provide the behavior of "overwriting" the directory. If you would like to avoid overwriting the output directory, see the command line option for [specifying an output directory](#specify-output-directory).
 
 **Tip:** If you are running this script on a web server, consider setting OutputDirectory to the directory where your website will be hosted. If your site is hosted on GitHub, consider setting OutputDirectory to a directory that is initialized with git, so you can simply run
 	git push
@@ -156,6 +171,8 @@ python3 generator.py --help
 
 By default posts will be sorted by date from newest to oldest. This provides the usual behavior of a blog: new posts are displayed at the top of the site's front page.
 
+### Reverse order
+
 This order can be reversed (and become oldest to newest) using a command line option:
 ```
 python3 generator.py -r
@@ -164,23 +181,38 @@ python3 generator.py --reverse (or --reversed)
 
 The user can also use command line arguments to sort posts by title (the value passed to the TITLE= field in a source file), metadata number (the value passed to the optional NUMBER= field in a source file), and source file filename:
 
-**Sort by post title** 
+### Sort by post title
 ```
 python3 generator.py -t
 python3 generator.py --sort-by-title
 ```
 
-**Sort by post metadata number** 
+### Sort by post metadata number
 ```
 python3 generator.py -n
 python3 generator.py --sort-by-number
 ```
 The NUMBER= field in source files is completely optional. Its only purpose is providing manual control over how posts are sorted, and this requires the -n command line option to be used.
 
-**Sort by filename** 
+### Sort by filename
 ```
 python3 generator.py -f
 python3 generator.py --sort-by-filename
+
 ```
+
+### Specify output directory
+
+By default the script will use the output directory specified in the configuration file. In order to use specify the output directory for the current run of the script, use the command line option:
+```
+python3 generator.py -o "path/to/output/directory"
+python3 generator.py --output="path/to/output/directory"
+```
+
+**Note: Any output directory specified using this option will be created on the fly. This is unlike the output directory in the configuration file which must be created manually before running the script.**
+
+**Tip:** This is useful for testing a website, when you do not want to overwrite the existing contents of the output directory specified in the configuration file.
+
+### Specify configuration file
 
 The other command line option that is available is [-c for manually specifying the path to a configuration file](#manually-specifying-the-path-to-a-configuration-file)

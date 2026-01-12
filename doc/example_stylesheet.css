@@ -14,6 +14,12 @@ div.post span#post-title {
 	color: darkolivegreen;
 }
 
+img {
+	width: 70%;
+	margin: auto;
+	display: block;
+}
+
 div.navigation {
 	background-color: white;
 	width: 60%;

@@ -13,8 +13,8 @@ from operator import attrgetter
 ## After outputting all the necessary pages, any pages that don't appear in the list "pages" sould be deleted. This is to create the behavior of "overwriting the current version of the generated site.
 ## Not every user will want to overwrite every time the command is run. Sometimes they will want to output to a different directory without overwriting the real directory. Add command line option for outputting to a a custom directory on the fly (and not the one specified in the config file). Document the default behavior of "overwriting" all files in the output directory in README. Right afterwards include a Tip: that explains how the command line option -o can be used as a quick way to avoid overwriting and link to the documentation for the -o command line option (which is also yet to be written)
 args = sys.argv[1:]
-short_options = "htnfrc:"
-long_options = ["help", "sort-by-title", "sort-by-number", "sort-by-filename", "reversed", "config="]
+short_options = "htnfrc:o:"
+long_options = ["help", "sort-by-title", "sort-by-number", "sort-by-filename", "reversed", "config=", "output="]
 try:
     arguments, trailing = getopt.getopt(args, short_options, long_options)
 except getopt.GetoptError as err:
@@ -33,9 +33,18 @@ reverse_mode = True
 file_mode = False
 number_mode = False
 title_mode = False
+custom_output = False
 for option, value in arguments:
     if option in ("-c", "--config"):
         config = os.path.expanduser(value)
+    elif option in ("-o", "--output"):
+        custom_output = True
+        try:
+            os.mkdir(value)
+        except:
+            pass
+        output_dir = os.path.expanduser(value)
+        output_dir = os.path.abspath(output_dir) + "/"
     elif option in ("-h", "--help"):
         print("Usage: generator.py [OPTIONS]")
         print("Options:")
@@ -46,6 +55,7 @@ for option, value in arguments:
         print("-n, --sort-by-number\tSort posts by metadata number (entered in the NUMBER= field of a source file")
         print("-r, --reversed\tSort posts in reverse order, from lowest to highest / oldest to newest.")
         print("-c 'path/to/config', --config='path/to/config'\tManually specify the configuration file to be used for this run of the script.")
+        print("-o 'path/to/output/directory', --output='path/to/output/directory'\tManually specify the output directory (Avoid overwriting the contents of the default output directory specified in the configuration file)")
         ## Insert link to documentation here.
         print("\nFor more information and a user guide, see README.md\nAvailable online at: ")
         sys.exit(0)
@@ -85,10 +95,10 @@ validate_config(config, 'Paths', ['OutputDirectory', 'SourceDirectory', 'PageTem
 # Get paths (by expanding them properly into absolute paths). Check if paths specified in config file point to existing files and directories.
 def get_path(config, section, key, item_name, is_directory):
     # If a relative path was written in the config file, interpret it relative to the location of the config file.
-    if not iniparser[section][key].startswith('/') or not iniparser[section][key].startswith('~'):
-        path = os.path.dirname(config) + "/" +  iniparser[section][key]
-    else:
+    if iniparser[section][key].startswith('/') or iniparser[section][key].startswith('~'):
         path = os.path.expanduser(iniparser[section][key])
+    else:
+        path = os.path.dirname(config) + "/" +  iniparser[section][key]
     exists = os.path.isdir(path) if is_directory else os.path.isfile(path)
     if exists:
         # Paths are saved as absolute. This may come at some cost to memory when saving a very large list of file paths to source_files. However, the concreteness that is gained from using absolute paths may be worth the increased memory size, especially on modern computers.
@@ -100,22 +110,32 @@ def get_path(config, section, key, item_name, is_directory):
     else:
         print(f"Could not find the {item_name} at: {path}")
         print(f"Config file in which the location of the {item_name} was specified: {config}")
-        print(f"Please ensure that the location specified in the config file represents the true location of the {item_name}.\n")
-        print("Also note that relative paths specified in the config file will be interpreted relative to the location of the config file.")
+        print(f"\nPlease ensure that the location specified in the config file represents the true location of the {item_name}.")
+        print("\nAlso note that relative paths specified in the config file will be interpreted relative to the location of the config file.")
+        print(f"\nIf {item_name} does not exist yet, please create it manually.")
         sys.exit(2)
 
-output_dir = get_path(config, 'Paths', 'OutputDirectory', "output directory", is_directory=True)
+if not custom_output:
+    output_dir = get_path(config, 'Paths', 'OutputDirectory', "output directory", is_directory=True)
 source_dir = get_path(config, 'Paths', 'SourceDirectory', "source directory", is_directory=True)
 page_template = get_path(config, 'Paths', 'PageTemplate', "page template", is_directory=False)
 post_template = get_path(config, 'Paths', 'PostTemplate', "post template", is_directory=False)
 navigation_template = get_path(config, 'Paths', 'NavigationTemplate', "navigation template", is_directory=False)
+
+### Remove any .html files that are currently in the output directory that were not created during this run of the script. This is to provide "overwrite" functionality.
+
+existing_files = os.listdir(output_dir)
+for existing_file in existing_files:
+    if existing_file.endswith(".html"):
+        os.remove(output_dir + "/" + existing_file)
 
 ### Create objects for blog posts located in source_dir
 ### Source files will be parsed for metadata and body text, which will then be saved in object properties
 post_objects = list()
 number = 1
 class BlogPost:
-    def __init__(self, filename, title, date, categories, meta_number, body):
+    def __init__(self, path, filename, title, date, categories, meta_number, body):
+        self.path = path
         self.filename = filename
         self.title = title
         self.date = date
@@ -129,7 +149,7 @@ class BlogPost:
 source_files = list()
 for rootdir, dirnames, filenames in os.walk(source_dir, topdown=True, followlinks=False):
     for file in filenames:
-        if file.endswith('.swp'):
+        if not file.endswith('.txt') or not file.endswith(''):
             continue
         file_path = os.path.join(rootdir, file)
         source_files.append(file_path)
@@ -172,7 +192,7 @@ for file in source_files:
             get_value(l, "DATE=", "date")
             get_value(l, "NUMBER=", "meta_number")
     filename = os.path.basename(file)
-    obj = BlogPost(filename, data["title"], data["date"], data["categories"], data["meta_number"], data["body"])
+    obj = BlogPost(file, filename, data["title"], data["date"], data["categories"], data["meta_number"], data["body"])
     post_objects.append(obj)
     data.clear()
 
@@ -212,7 +232,7 @@ else:
         obj.number = str(number)
         number += 1
 
-### Function for finding and replacing tags in post_template with post object properties.
+### Function for finding and replacing tags in post_template with post object properties. Also formats content within the body of the source file.
 
 def format_post(obj):
     with open(post_template, "r") as f:
@@ -222,7 +242,14 @@ def format_post(obj):
         temp = temp.replace("(DATE)", " ".join(obj.date))
         temp = temp.replace("(CATEGORIES)", ", ".join(obj.categories))
         temp_body = obj.body
-        temp_body = temp_body.replace("\n", "<br>")
+        # Process formatting within the body of the source file
+        for line in temp_body.splitlines():
+            if line.startswith("(IMAGE"):
+                image_path = line.split(" ")[1]
+                image_path = image_path.removesuffix(")")
+                temp_body = temp_body.replace(line, "</p><img src=\"" + os.path.dirname(obj.path) + "/" + image_path + "\"><p>")
+                continue
+            temp_body = temp_body.replace("\n", "<br>")
         temp = temp.replace("(BODY)", temp_body) 
         return temp
 
@@ -320,3 +347,4 @@ def process_pages(page_number):
 
 for page_number in page_numbers:
     process_pages(page_number)
+

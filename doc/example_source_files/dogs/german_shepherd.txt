@@ -5,6 +5,6 @@ NUMBER=3
 
 (START)
 The German Shepherd, also known in Britain as an Alsatian, is a German breed of working dog of medium to large size. It is characterized by its intelligent and obedient nature.
-
+(IMAGE german_shepherd.jpg)
 Its historical role was as a herding dog, for herding sheep. It has since been used in many other types of work, including disability assistance, search-and-rescue, police work, and warfare. It is commonly kept as a companion dog.
 (STOP)
