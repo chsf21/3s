@@ -5,6 +5,6 @@ NUMBER=
 
 (START)
 The Siamese cat is one of the first distinctly recognised breeds of Asian cat.
-(IMAGE siamese.JPG)
+(IMAGE siamese.JPG siamese)
 It derives from the Wichianmat landrace. The Siamese cat is one of several varieties of cats native to Thailand (known as Siam before 1939). The original Siamese became one of the most popular breeds in Europe and North America in the 19th century.
 (STOP)

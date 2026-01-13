@@ -20,12 +20,12 @@ except getopt.GetoptError as err:
     sys.exit(2)
 
 # By default search for config in the same directory as where this script is located.
-# If the user is already in the directory where the config and script are located (and therefore root==""), then don't add a "/" before "config.ini"
-root = os.path.dirname(sys.argv[0])
-if root == "":
+# If the user is already in the directory where the config and script are located (and therefore script_dir==""), then don't add a "/" before "config.ini"
+script_dir = os.path.dirname(sys.argv[0])
+if script_dir == "":
     config = "config.ini"
 else:
-    config = root + "/config.ini"
+    config = script_dir + "/config.ini"
 
 reverse_mode = True
 file_mode = False
@@ -239,14 +239,32 @@ def format_post(obj):
         temp_body = obj.body
         # Process formatting within the body of the source file
         for line in temp_body.splitlines():
-            ## Add option for floating the image to the left or right
             if line.startswith("(IMAGE"):
+                # Does not literally mean "image arguments". It is a list containing ["(IMAGE", "path/to/image", "id"] (if an id is specified. id is optional.)
                 image_args = line.split(" ")
+
+                if len(image_args) > 3:
+                    print(f"Too many arguments given to (IMAGE) in source file {obj.filename}.") 
+                    print("Please format (IMAGE) as: (IMAGE path/to/image [id])")
+                    continue
+                elif len(image_args) < 2:
+                    print(f"No arguments given to (IMAGE) in source file {obj.filename}.")
+                    print("Please format (IMAGE) as: (IMAGE path/to/image [id])")
+                    continue
+
                 image_args[-1] = image_args[-1].removesuffix(")")
-                if len(image_args) == 3:
-                    temp_body = temp_body.replace(line, "</p><img src=\"" + os.path.dirname(obj.path) + "/" + image_args[1] + "\" id=\"" + image_args[2] + "\"><p>")
+                # If an image's path is given as a relative path, expand it relative to the location of the source file.
+                if image_args[1].startswith("/") or image_args[1].startswith("~"):
+                    img_path = os.path.expanduser(image_args[1])
                 else:
-                    temp_body = temp_body.replace(line, "</p><img src=\"" + os.path.dirname(obj.path) + "/" + image_args[1] + "\"><p>")
+                    img_path = os.path.dirname(obj.path) + "/" + image_args[1]
+                
+                if len(image_args) == 3:
+                    img_line = f"</p><img src=\"{img_path}\" id=\"{image_args[2]}\"><p>"
+                    temp_body = temp_body.replace(line, img_line)
+                else:
+                    img_line = f"</p><img src=\"{img_path}\"><p>"
+                    temp_body = temp_body.replace(line, img_line)
                 continue
             temp_body = temp_body.replace("\n", "<br>")
         temp = temp.replace("(BODY)", temp_body) 

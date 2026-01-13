@@ -58,7 +58,7 @@ An optional 2nd argument can be given to IMAGE in order to give the generated \<
 
 **Tip:** In order to have the image size correctly, select the \<img\> tag with CSS and use "width: 70%;" or another preferred number. For a webcomic, you may want to use "width: 100%;". In order to center the image, include in the CSS: "display: block;" and "margin: auto;"
 
-Example source files are included in the "doc" directory.
+Example source files are included in the "doc" directory. (They mostly use text from Wikipedia and images from Wikimedia Commons.)
 
 ## Templates
 The template files are regular HTML files. Certain keywords written in these templates will be replaced by content upon running the script. (For example, a keyword that represents a single post will be replaced with a single post.)

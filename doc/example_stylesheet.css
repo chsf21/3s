@@ -3,6 +3,14 @@ body {
 	background-color: CadetBlue;
 }
 
+p {
+	text-align: center;
+}
+
+img#siamese {
+	width: 30%;
+}
+
 div.posts {
 	background-color: white;
 	width: 60%;
