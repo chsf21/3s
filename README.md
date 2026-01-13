@@ -22,7 +22,7 @@ I strongly recommend reading through them to get acquainted with the script. For
 In order to generate a website, four components are needed:
 
 * Source files (these are the posts that will be inserted into the website)
-* Templates written in HTML (A page template for how each page will look; a post template for how each post will look _within_ the page template; and a template for navigation buttons)
+* Templates written in HTML. (A page template for how each page will look; a post template for how each post will look _within_ the page template; and a template for navigation buttons)
 * A configuration file (contains paths to necessary files)
 * The Python script
 
@@ -47,14 +47,16 @@ Body Text
 
 Note that (START) and (STOP) must be written on their own lines. The body text should also start on its own line.
 
-Within the body, images can be inserted. This is done by writing
+Within the body, images can be inserted. This is done by writing:
 
-    (IMAGE path/to/image)
-This must be placed on its own line. The path to the image should be written relative to the location of the source file. This makes it simple to write insert an image; simply place the image in the same directory as the source file and write: (IMAGE image.jpg)
+    (IMAGE path/to/image [id])
+This must be placed on its own line. The path to the image should be written relative to the location of the source file. This makes it simple to write insert an image; simply place the image in the same directory as the source file and write: (IMAGE image.jpg). 
+
+An optional 2nd argument can be given to IMAGE in order to give the generated \<img\> element an HTML id. Simply write the name of the value that you would like to be inserted in the id="" of the \<img\> element. This is useful for situations where you may want to select a specific image with CSS.
 
 **Note:** The path that will be used for images in the final outputted page is an absolute path. If you are on a personal computer, this path may contain your name or other personal information.
 
-**Tip:** In order to have the image size correctly, target the \<img\> tag with CSS and use "width: 70%;" or another preferred number. For a webcomic, you may want to use "width: 100%;". In order to center the image, include in the CSS: "display: block;" and "margin: auto;"
+**Tip:** In order to have the image size correctly, select the \<img\> tag with CSS and use "width: 70%;" or another preferred number. For a webcomic, you may want to use "width: 100%;". In order to center the image, include in the CSS: "display: block;" and "margin: auto;"
 
 Example source files are included in the "doc" directory.
 

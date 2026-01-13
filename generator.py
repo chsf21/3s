@@ -54,8 +54,7 @@ for option, value in arguments:
         print("-r, --reversed\tSort posts in reverse order, from lowest to highest / oldest to newest.")
         print("-c 'path/to/config', --config='path/to/config'\tManually specify the configuration file to be used for this run of the script.")
         print("-o 'path/to/output/directory', --output='path/to/output/directory'\tManually specify the output directory (Avoid overwriting the contents of the default output directory specified in the configuration file)")
-        ## Insert link to documentation here.
-        print("\nFor more information and a user guide, see README.md\nAvailable online at: ")
+        print("\nFor more information and a user guide, see README.md\nAvailable online at: https://github.com/chsf21/3s/")
         sys.exit(0)
     elif option in ("-t", "--sort-by-title"):
         title_mode = True
@@ -84,8 +83,7 @@ def validate_config(config, section, keys):
     for key in keys:
         if not iniparser.has_option(section, key):
             print(f"The option {key} is missing from the config file: {config}")
-## Add link to documentation here
-            print(f"For information on how to set up and write the config file, please see the documentation at: [link to documentation]")
+            print(f"For information on how to set up and write the config file, please see the documentation at: https://github.com/chsf21/3s/")
             sys.exit(2)
 
 validate_config(config, 'Paths', ['OutputDirectory', 'SourceDirectory', 'PageTemplate', 'PostTemplate', 'NavigationTemplate'])
@@ -181,7 +179,6 @@ for file in source_files:
                 continue
             elif in_body:
                 ## Add support for parsing * and ** - for italics and bold respectively.
-                ## Add support for images. Optional paramaters for floating them to the left or right. Make sure that relative paths are interpreted relative to the source file location (by getting the path of the source file, then adding the relative path to it)
                 ## Add support for code blocks
                 data["body"] += l
                 continue
@@ -242,10 +239,14 @@ def format_post(obj):
         temp_body = obj.body
         # Process formatting within the body of the source file
         for line in temp_body.splitlines():
+            ## Add option for floating the image to the left or right
             if line.startswith("(IMAGE"):
-                image_path = line.split(" ")[1]
-                image_path = image_path.removesuffix(")")
-                temp_body = temp_body.replace(line, "</p><img src=\"" + os.path.dirname(obj.path) + "/" + image_path + "\"><p>")
+                image_args = line.split(" ")
+                image_args[-1] = image_args[-1].removesuffix(")")
+                if len(image_args) == 3:
+                    temp_body = temp_body.replace(line, "</p><img src=\"" + os.path.dirname(obj.path) + "/" + image_args[1] + "\" id=\"" + image_args[2] + "\"><p>")
+                else:
+                    temp_body = temp_body.replace(line, "</p><img src=\"" + os.path.dirname(obj.path) + "/" + image_args[1] + "\"><p>")
                 continue
             temp_body = temp_body.replace("\n", "<br>")
         temp = temp.replace("(BODY)", temp_body) 
