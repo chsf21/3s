@@ -1,3 +1,5 @@
+# 3s: Simple Static Site (Generator)
+
 A lightweight Python script for generating static websites from textfiles and "templates" written in HTML. Great for blogs, news, webcomics, and more.
 
 ## Requirements

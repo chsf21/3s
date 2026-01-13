@@ -10,8 +10,6 @@ import shutil
 from operator import attrgetter
 
 ### Handle command line options/arguments
-## After outputting all the necessary pages, any pages that don't appear in the list "pages" sould be deleted. This is to create the behavior of "overwriting the current version of the generated site.
-## Not every user will want to overwrite every time the command is run. Sometimes they will want to output to a different directory without overwriting the real directory. Add command line option for outputting to a a custom directory on the fly (and not the one specified in the config file). Document the default behavior of "overwriting" all files in the output directory in README. Right afterwards include a Tip: that explains how the command line option -o can be used as a quick way to avoid overwriting and link to the documentation for the -o command line option (which is also yet to be written)
 args = sys.argv[1:]
 short_options = "htnfrc:o:"
 long_options = ["help", "sort-by-title", "sort-by-number", "sort-by-filename", "reversed", "config=", "output="]
