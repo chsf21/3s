@@ -118,13 +118,6 @@ page_template = get_path(config, 'Paths', 'PageTemplate', "page template", is_di
 post_template = get_path(config, 'Paths', 'PostTemplate', "post template", is_directory=False)
 navigation_template = get_path(config, 'Paths', 'NavigationTemplate', "navigation template", is_directory=False)
 
-### Remove any .html files that are currently in the output directory that were not created during this run of the script. This is to provide "overwrite" functionality.
-
-existing_files = os.listdir(output_dir)
-for existing_file in existing_files:
-    if existing_file.endswith(".html"):
-        os.remove(output_dir + "/" + existing_file)
-
 ### Create objects for blog posts located in source_dir
 ### Source files will be parsed for metadata and body text, which will then be saved in object properties
 post_objects = list()
@@ -209,6 +202,7 @@ else:
             obj.date_dt = datetime.datetime.strptime(obj.date[0], '%m/%d/%y')
         else:
             print("DATE value in source file '" + obj.filename + "' is written incorrectly. Please ensure that it is written in MM/DD/YY format or MM/DD/YY Hour:Minute (24hr) format.")
+            print("Aborting current run of the script.")
             sys.exit(2)
     post_objects.sort(key=attrgetter("date_dt"), reverse=reverse_mode)
     for obj in post_objects:
@@ -246,10 +240,12 @@ def format_post(obj):
                 if len(image_args) > 3:
                     print(f"Too many arguments given to (IMAGE) in source file {obj.filename}.") 
                     print("Please format (IMAGE) as: (IMAGE path/to/image [id])")
+                    print("Script will continue anyway. Post for {obj.filename} will not display image correctly.\n")
                     continue
                 elif len(image_args) < 2:
                     print(f"No arguments given to (IMAGE) in source file {obj.filename}.")
                     print("Please format (IMAGE) as: (IMAGE path/to/image [id])")
+                    print("Script will continue anyway. Post for {obj.filename} will not display image correctly.\n")
                     continue
 
                 image_args[-1] = image_args[-1].removesuffix(")")
@@ -269,6 +265,13 @@ def format_post(obj):
             temp_body = temp_body.replace("\n", "<br>")
         temp = temp.replace("(BODY)", temp_body) 
         return temp
+
+### Remove any .html files that are currently in the output directory that were not created during this run of the script. This is to provide "overwrite" functionality.
+
+existing_files = os.listdir(output_dir)
+for existing_file in existing_files:
+    if existing_file.endswith(".html"):
+        os.remove(output_dir + "/" + existing_file)
 
 ### Insert formatted posts (returned by format_post) into page_template. Create a new page when necessary.
 current_page = shutil.copyfile(page_template, output_dir + "index.html")
