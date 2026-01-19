@@ -1,9 +1,9 @@
 TITLE=Markup Example
-DATE=01/19/2026
+DATE=01/19/2026 15:5555 5 5
 CATEGORY=technical
 
 (START)
-```Welcome to the example of how Markdown
+```Welcome to the example of how markup
 	works
 		in
 			this generator```

@@ -136,7 +136,6 @@ class BlogPost:
     # Fix year that was accidentally written as 4 digits instead of 2
     def fix_year(self):
         date_year = self.date[0].split("/")[2]
-        print(date_year)
         if len(date_year) == 4:
             self.date[0] = self.date[0][:-4] + date_year[-2:]
 
@@ -202,7 +201,6 @@ for file in source_files:
                     continue
     filename = os.path.basename(file)
     obj = BlogPost(file, filename, data["title"], data["date"], data["categories"], data["meta_number"], data["body"])
-    print(obj.date)
     post_objects.append(obj)
     data.clear()
 
@@ -219,7 +217,6 @@ elif title_mode:
 # Possible performance issues caused by creating date objects inside the sort() method, so this was avoided to be safe: https://stackoverflow.com/questions/10123953/how-to-sort-an-object-array-by-date-property#comment100564234_10124053
 else:
     for obj in post_objects:
-        print(obj.date)
         if len(obj.date) == 2:
             obj.fix_year()
             obj.date_dt = datetime.datetime.strptime(" ".join(obj.date), '%m/%d/%y %H:%M')
@@ -228,11 +225,19 @@ else:
             obj.date_dt = datetime.datetime.strptime(obj.date[0], '%m/%d/%y')
         # If no date was given, default to 01/01/2000
         elif obj.date == "":
-            obj.date_dt = datetime.datetime.strptime("01/01/20", '%m/%d/%y')
+            obj.date_dt = datetime.datetime.strptime("01/01/00", '%m/%d/%y')
         else:
             print("DATE value in source file '" + obj.filename + "' is written incorrectly. Please ensure that it is written in MM/DD/YY format or MM/DD/YY Hour:Minute (24hr) format.")
-            print("DATE for " + obj.filename + " may display incorrectly")
-            obj.date = obj.date[:1]
+            obj.date = obj.date[:2]
+            obj.fix_year()
+            try:
+                obj.date_dt = datetime.datetime.strptime(" ".join(obj.date), '%m/%d/%y %H:%M')
+            except:
+                obj.date_dt = datetime.datetime.strptime("01/01/00", '%m/%d/%y')
+                print("Could not extract date. Defaulting to 01/01/00 for " + obj.filename + "'s date.")
+            else:
+                print("Attempted to extract date regardless. Date for " + obj.filename + " may display incorrectly.")
+
     post_objects.sort(key=attrgetter("date_dt"), reverse=reverse_mode)
     for obj in post_objects:
         del obj.date_dt
