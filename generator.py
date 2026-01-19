@@ -133,6 +133,13 @@ class BlogPost:
         self.body = body
         self.number = number
 
+    # Fix year that was accidentally written as 4 digits instead of 2
+    def fix_year(self):
+        date_year = self.date[0].split("/")[2]
+        print(date_year)
+        if len(date_year) == 4:
+            self.date[0] = self.date[0][:-4] + date_year[-2:]
+
 # Traverse the source_dir recursively and save files to source_files list
 # Symlinks are not followed to prevent an error where os.walk enters an infinite loop
 source_files = list()
@@ -145,14 +152,21 @@ for rootdir, dirnames, filenames in os.walk(source_dir, topdown=True, followlink
 
 # Function for pulling metadata out of a source file and saving it to a dict
 data = dict()
-def get_value(line, file_key, dict_key):
-    if line.startswith(file_key):
-        data[dict_key] = line.removeprefix(file_key)
-        data[dict_key] = data[dict_key].removesuffix('\n')
-        if file_key == "C=":
-            data[dict_key] = data[dict_key].split(",")
-        elif file_key == "DATE=":
-            data[dict_key] = data[dict_key].split(" ")
+def get_value(dictionary, line, source_key, dict_key):
+    if line.startswith(source_key):
+        dictionary[dict_key] = line.removeprefix(source_key)
+        dictionary[dict_key] = dictionary[dict_key].removesuffix('\n')
+        if source_key in ("C=", "CATEGORIES=", "CATEGORY="):
+            dictionary[dict_key] = dictionary[dict_key].split(",")
+        elif source_key == "DATE=":
+            dictionary[dict_key] = dictionary[dict_key].split(" ")
+        return True
+    else:
+        # If no key is found in the source file, then the dictionary key should equal the empty string.
+        # Since setting date to the empty string can cause issues (when trying to convert date into a datetime object for sorting), date will be given a default value when set to the empty string (see below)
+        if dict_key not in dictionary.keys():
+            dictionary[dict_key] = ""
+        return False
 
 # Go through source file line by line. If metadata is encountered, parse it and save it to a dict. Parse body text.
 in_body = False
@@ -171,20 +185,29 @@ for file in source_files:
                 data["body"] = ""
                 continue
             elif in_body:
-                ## Add support for parsing * and ** - for italics and bold respectively.
-                ## Add support for code blocks
                 data["body"] += l
                 continue
-            get_value(l, "TITLE=", "title")
-            get_value(l, "C=", "categories")
-            get_value(l, "DATE=", "date")
-            get_value(l, "NUMBER=", "meta_number")
+            else:
+                if get_value(data, l, "TITLE=", "title"):
+                    continue
+                elif get_value(data, l, "C=", "categories"):
+                    continue
+                elif get_value(data, l, "CATEGORY=", "categories"):
+                    continue
+                elif get_value(data, l, "CATEGORIES=", "categories"):
+                    continue
+                elif get_value(data, l, "DATE=", "date"):
+                    continue
+                elif get_value(data, l, "NUMBER=", "meta_number"):
+                    continue
     filename = os.path.basename(file)
     obj = BlogPost(file, filename, data["title"], data["date"], data["categories"], data["meta_number"], data["body"])
+    print(obj.date)
     post_objects.append(obj)
     data.clear()
 
 ### Sort post_objects. (Default: By date, newest to oldest. With command line options, it is also possible to sort by filename (-f), title (-t), or meatadata number (-n). These will also be sorted from highest to lowest. To sort from oldest to newest / lowest to highest, use the command line option (-r).
+
 
 if file_mode:
     post_objects.sort(key=attrgetter("filename"), reverse=reverse_mode)
@@ -196,14 +219,20 @@ elif title_mode:
 # Possible performance issues caused by creating date objects inside the sort() method, so this was avoided to be safe: https://stackoverflow.com/questions/10123953/how-to-sort-an-object-array-by-date-property#comment100564234_10124053
 else:
     for obj in post_objects:
+        print(obj.date)
         if len(obj.date) == 2:
+            obj.fix_year()
             obj.date_dt = datetime.datetime.strptime(" ".join(obj.date), '%m/%d/%y %H:%M')
         elif len(obj.date) == 1:
+            obj.fix_year()
             obj.date_dt = datetime.datetime.strptime(obj.date[0], '%m/%d/%y')
+        # If no date was given, default to 01/01/2000
+        elif obj.date == "":
+            obj.date_dt = datetime.datetime.strptime("01/01/20", '%m/%d/%y')
         else:
             print("DATE value in source file '" + obj.filename + "' is written incorrectly. Please ensure that it is written in MM/DD/YY format or MM/DD/YY Hour:Minute (24hr) format.")
-            print("Aborting current run of the script.")
-            sys.exit(2)
+            print("DATE for " + obj.filename + " may display incorrectly")
+            obj.date = obj.date[:1]
     post_objects.sort(key=attrgetter("date_dt"), reverse=reverse_mode)
     for obj in post_objects:
         del obj.date_dt
@@ -237,7 +266,15 @@ def handle_bold(string_as_list, index, bold_encountered_flag):
         return bold_encountered_flag
 
 def handle_italics(string_as_list, index, italics_encountered_flag):
-    if string_as_list[index] == "*" and not string_as_list[index + 1] == "*":
+    # If there is a * at the end of a line (string_as_index), it is definitely there to mark italics and not bold (as bold would require two characters: **)
+    if index == (len(string_as_list) - 1) and string_as_list[index] == "*":
+        if italics_encountered_flag == False:
+            string_as_list[index] = "<em>"
+            return True
+        else:
+            string_as_list[index] = "</em>"
+            return False
+    elif string_as_list[index] == "*" and not string_as_list[index + 1] == "*":
         if italics_encountered_flag == False:
             string_as_list[index] = "<em>"
             return True
@@ -246,6 +283,21 @@ def handle_italics(string_as_list, index, italics_encountered_flag):
             return False
     else:
         return italics_encountered_flag
+
+def handle_code(string_as_list, index, code_encountered_flag):
+    if string_as_list[index] == "`" and string_as_list[index + 1] == "`" and string_as_list[index + 2] == "`":
+        if code_encountered_flag == False:
+            string_as_list[index] = "<code>"
+            string_as_list[index + 1] = ""
+            string_as_list[index + 2] = ""
+            return True
+        else:
+            string_as_list[index] = "</code>"
+            string_as_list[index + 1] = ""
+            string_as_list[index + 2] = ""
+            return False
+    else:
+        return code_encountered_flag
 
 ### Function for finding and replacing tags in post_template with post object properties. Also formats content within the body of the source file.
 def format_post(obj):
@@ -259,6 +311,7 @@ def format_post(obj):
         # Process formatting within the body of the source file
         italics_encountered = False
         bold_encountered = False 
+        code_encountered = False 
         for line in temp_body.splitlines():
             if line.startswith("(IMAGE"):
                 # Does not literally mean "image arguments". It is a list containing ["(IMAGE", "path/to/image", "id"] (if an id is specified. id is optional.)
@@ -299,11 +352,16 @@ def format_post(obj):
                         continue
                     elif char_num == (len(formatted_line) - 1):
                         italics_encountered = handle_italics(formatted_line, char_num, italics_encountered)
+                    elif char_num == (len(formatted_line) - 2):
+                        italics_encountered = handle_italics(formatted_line, char_num, italics_encountered)
+                        bold_encountered = handle_bold(formatted_line, char_num, bold_encountered)
                     else:
+                        code_encountered = handle_code(formatted_line, char_num, code_encountered)
                         italics_encountered = handle_italics(formatted_line, char_num, italics_encountered)
                         bold_encountered = handle_bold(formatted_line, char_num, bold_encountered)
                 temp_body = temp_body.replace(line, ''.join(formatted_line))
         temp_body = temp_body.replace("\n", "<br>")
+        temp_body = temp_body.replace("\t", "&emsp;")
         temp = temp.replace("(BODY)", temp_body) 
         return temp
 

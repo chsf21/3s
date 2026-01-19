@@ -1,0 +1,14 @@
+TITLE=Markup Example
+DATE=01/19/2026
+CATEGORY=technical
+
+(START)
+```Welcome to the example of how Markdown
+	works
+		in
+			this generator```
+Writing **bold text**
+And writing *italic text*
+Combining ***bold and italic text***
+Another *combination of **bold** and italic text*
+(STOP)

@@ -7,6 +7,10 @@ p {
 	text-align: center;
 }
 
+code {
+	text-align: left;
+}
+
 img#siamese {
 	width: 30%;
 }
