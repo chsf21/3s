@@ -221,8 +221,33 @@ else:
         obj.number = str(number)
         number += 1
 
-### Function for finding and replacing tags in post_template with post object properties. Also formats content within the body of the source file.
+### Functions for handling italics * and bold ** markers.
+### Used later in the function format_post
+def handle_bold(string_as_list, index, bold_encountered_flag):
+    if string_as_list[index] == "*" and string_as_list[index + 1] == "*":
+        if bold_encountered_flag == False:
+            string_as_list[index] = "<strong>"
+            string_as_list[index + 1] = ""
+            return True
+        else:
+            string_as_list[index] = "</strong>"
+            string_as_list[index + 1] = ""
+            return False
+    else:
+        return bold_encountered_flag
 
+def handle_italics(string_as_list, index, italics_encountered_flag):
+    if string_as_list[index] == "*" and not string_as_list[index + 1] == "*":
+        if italics_encountered_flag == False:
+            string_as_list[index] = "<em>"
+            return True
+        else:
+            string_as_list[index] = "</em>"
+            return False
+    else:
+        return italics_encountered_flag
+
+### Function for finding and replacing tags in post_template with post object properties. Also formats content within the body of the source file.
 def format_post(obj):
     with open(post_template, "r") as f:
         temp = f.read()
@@ -232,6 +257,8 @@ def format_post(obj):
         temp = temp.replace("(CATEGORIES)", ", ".join(obj.categories))
         temp_body = obj.body
         # Process formatting within the body of the source file
+        italics_encountered = False
+        bold_encountered = False 
         for line in temp_body.splitlines():
             if line.startswith("(IMAGE"):
                 # Does not literally mean "image arguments". It is a list containing ["(IMAGE", "path/to/image", "id"] (if an id is specified. id is optional.)
@@ -262,7 +289,21 @@ def format_post(obj):
                     img_line = f"</p><img src=\"{img_path}\"><p>"
                     temp_body = temp_body.replace(line, img_line)
                 continue
-            temp_body = temp_body.replace("\n", "<br>")
+            else:
+                # Interpreting * and ** as italics and bold tags respectively
+                formatted_line = list(line)
+                for char_num in range(len(formatted_line)):
+                    # The last character of a line can not possibly be a bold tag because bold tags are two characters: **
+                    if char_num > 0 and formatted_line[char_num - 1] == "\\":
+                        formatted_line[char_num - 1] = ""
+                        continue
+                    elif char_num == (len(formatted_line) - 1):
+                        italics_encountered = handle_italics(formatted_line, char_num, italics_encountered)
+                    else:
+                        italics_encountered = handle_italics(formatted_line, char_num, italics_encountered)
+                        bold_encountered = handle_bold(formatted_line, char_num, bold_encountered)
+                temp_body = temp_body.replace(line, ''.join(formatted_line))
+        temp_body = temp_body.replace("\n", "<br>")
         temp = temp.replace("(BODY)", temp_body) 
         return temp
 
