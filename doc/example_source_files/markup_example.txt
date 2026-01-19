@@ -1,5 +1,5 @@
 TITLE=Markup Example
-DATE=01/19/2026 15:5555 5 5
+DATE=1/19/2026 10:10
 CATEGORY=technical
 
 (START)

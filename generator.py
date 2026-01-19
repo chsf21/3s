@@ -1,3 +1,4 @@
+## Proof that previous_bold_or_italics never becomes equal to "bold" for some reason.
 ### = Annotation for section of code
 ## = Todo
 # = General annotations, explains pieces of code.
@@ -144,7 +145,7 @@ class BlogPost:
 source_files = list()
 for rootdir, dirnames, filenames in os.walk(source_dir, topdown=True, followlinks=False):
     for file in filenames:
-        if not file.endswith('.txt') or not file.endswith(''):
+        if not file.endswith('.txt') or not file.endswith('') or file.startswith('.'):
             continue
         file_path = os.path.join(rootdir, file)
         source_files.append(file_path)
@@ -206,6 +207,10 @@ for file in source_files:
 
 ### Sort post_objects. (Default: By date, newest to oldest. With command line options, it is also possible to sort by filename (-f), title (-t), or meatadata number (-n). These will also be sorted from highest to lowest. To sort from oldest to newest / lowest to highest, use the command line option (-r).
 
+def default_date(obj):
+    print("Could not extract date. Defaulting to 01/01/00 for " + obj.filename + "'s date. No date will be displayed for this post on the generated website.")
+    obj.date = ""
+    obj.date_dt = datetime.datetime.strptime("01/01/00", '%m/%d/%y')
 
 if file_mode:
     post_objects.sort(key=attrgetter("filename"), reverse=reverse_mode)
@@ -217,15 +222,24 @@ elif title_mode:
 # Possible performance issues caused by creating date objects inside the sort() method, so this was avoided to be safe: https://stackoverflow.com/questions/10123953/how-to-sort-an-object-array-by-date-property#comment100564234_10124053
 else:
     for obj in post_objects:
+        # If an hour was given for DATE=
         if len(obj.date) == 2:
             obj.fix_year()
-            obj.date_dt = datetime.datetime.strptime(" ".join(obj.date), '%m/%d/%y %H:%M')
+            try:
+                obj.date_dt = datetime.datetime.strptime(" ".join(obj.date), '%m/%d/%y %H:%M')
+            except:
+                default_date(obj)
+        # If no hour was given
         elif len(obj.date) == 1:
             obj.fix_year()
-            obj.date_dt = datetime.datetime.strptime(obj.date[0], '%m/%d/%y')
-        # If no date was given, default to 01/01/2000
+            try:
+                obj.date_dt = datetime.datetime.strptime(obj.date[0], '%m/%d/%y')
+            except:
+                default_date(obj)
+        # If no date was given, default to 01/01/2000 for sorting purposes. (That default date will not display on the generated website.)
         elif obj.date == "":
             obj.date_dt = datetime.datetime.strptime("01/01/00", '%m/%d/%y')
+        # If the date was formatted incorrectly (more than two arguments, so likely not just MM/DD/YY and Hour:Minute), try to extract the proper date.
         else:
             print("DATE value in source file '" + obj.filename + "' is written incorrectly. Please ensure that it is written in MM/DD/YY format or MM/DD/YY Hour:Minute (24hr) format.")
             obj.date = obj.date[:2]
@@ -233,8 +247,7 @@ else:
             try:
                 obj.date_dt = datetime.datetime.strptime(" ".join(obj.date), '%m/%d/%y %H:%M')
             except:
-                obj.date_dt = datetime.datetime.strptime("01/01/00", '%m/%d/%y')
-                print("Could not extract date. Defaulting to 01/01/00 for " + obj.filename + "'s date.")
+                default_date(obj)
             else:
                 print("Attempted to extract date regardless. Date for " + obj.filename + " may display incorrectly.")
 
@@ -257,37 +270,37 @@ else:
 
 ### Functions for handling italics * and bold ** markers.
 ### Used later in the function format_post
-def handle_bold(string_as_list, index, bold_encountered_flag):
+def handle_bold(string_as_list, index, bold_encountered_flag, previous_tracker):
     if string_as_list[index] == "*" and string_as_list[index + 1] == "*":
         if bold_encountered_flag == False:
             string_as_list[index] = "<strong>"
             string_as_list[index + 1] = ""
-            return True
+            return True, "bold"
         else:
             string_as_list[index] = "</strong>"
             string_as_list[index + 1] = ""
-            return False
+            return False, "bold"
     else:
-        return bold_encountered_flag
+        return bold_encountered_flag, previous_tracker
 
-def handle_italics(string_as_list, index, italics_encountered_flag):
-    # If there is a * at the end of a line (string_as_index), it is definitely there to mark italics and not bold (as bold would require two characters: **)
+def handle_italics(string_as_list, index, italics_encountered_flag, previous_tracker):
+    # If there is a * at the end of a line (string_as_index), it is definitely there to mark italics and not bold (as bold would require two characters: **). This piece of code is necessary, because it allows us to avoid evaluating [index + 1] when at the end of a line, which would return an error.
     if index == (len(string_as_list) - 1) and string_as_list[index] == "*":
         if italics_encountered_flag == False:
             string_as_list[index] = "<em>"
-            return True
+            return True, "italics"
         else:
             string_as_list[index] = "</em>"
-            return False
+            return False, "italics"
     elif string_as_list[index] == "*" and not string_as_list[index + 1] == "*":
         if italics_encountered_flag == False:
             string_as_list[index] = "<em>"
-            return True
+            return True, "italics"
         else:
             string_as_list[index] = "</em>"
-            return False
+            return False, "italics"
     else:
-        return italics_encountered_flag
+        return italics_encountered_flag, previous_tracker
 
 def handle_code(string_as_list, index, code_encountered_flag):
     if string_as_list[index] == "`" and string_as_list[index + 1] == "`" and string_as_list[index + 2] == "`":
@@ -313,62 +326,84 @@ def format_post(obj):
         temp = temp.replace("(DATE)", " ".join(obj.date))
         temp = temp.replace("(CATEGORIES)", ", ".join(obj.categories))
         temp_body = obj.body
-        # Process formatting within the body of the source file
-        italics_encountered = False
-        bold_encountered = False 
-        code_encountered = False 
-        for line in temp_body.splitlines():
-            if line.startswith("(IMAGE"):
-                # Does not literally mean "image arguments". It is a list containing ["(IMAGE", "path/to/image", "id"] (if an id is specified. id is optional.)
-                image_args = line.split(" ")
+    # Process formatting within the body of the source file
+    italics_encountered = False
+    bold_encountered = False 
+    code_encountered = False 
+    previous_bold_or_italics = "italics"
+    for line in temp_body.splitlines():
+        if line.startswith("(IMAGE"):
+            # Does not literally mean "image arguments". It is a list containing ["(IMAGE", "path/to/image", "id"] (if an id is specified. id is optional.)
+            image_args = line.split(" ")
 
-                if len(image_args) > 3:
-                    print(f"Too many arguments given to (IMAGE) in source file {obj.filename}.") 
-                    print("Please format (IMAGE) as: (IMAGE path/to/image [id])")
-                    print("Script will continue anyway. Post for {obj.filename} will not display image correctly.\n")
-                    continue
-                elif len(image_args) < 2:
-                    print(f"No arguments given to (IMAGE) in source file {obj.filename}.")
-                    print("Please format (IMAGE) as: (IMAGE path/to/image [id])")
-                    print("Script will continue anyway. Post for {obj.filename} will not display image correctly.\n")
-                    continue
-
-                image_args[-1] = image_args[-1].removesuffix(")")
-                # If an image's path is given as a relative path, expand it relative to the location of the source file.
-                if image_args[1].startswith("/") or image_args[1].startswith("~"):
-                    img_path = os.path.expanduser(image_args[1])
-                else:
-                    img_path = os.path.dirname(obj.path) + "/" + image_args[1]
-                
-                if len(image_args) == 3:
-                    img_line = f"</p><img src=\"{img_path}\" id=\"{image_args[2]}\"><p>"
-                    temp_body = temp_body.replace(line, img_line)
-                else:
-                    img_line = f"</p><img src=\"{img_path}\"><p>"
-                    temp_body = temp_body.replace(line, img_line)
+            if len(image_args) > 3:
+                print(f"Too many arguments given to (IMAGE) in source file {obj.filename}.") 
+                print("Please format (IMAGE) as: (IMAGE path/to/image [id])")
+                print("Script will continue anyway. Post for {obj.filename} will not display image correctly.\n")
                 continue
+            elif len(image_args) < 2:
+                print(f"No arguments given to (IMAGE) in source file {obj.filename}.")
+                print("Please format (IMAGE) as: (IMAGE path/to/image [id])")
+                print("Script will continue anyway. Post for {obj.filename} will not display image correctly.\n")
+                continue
+
+            image_args[-1] = image_args[-1].removesuffix(")")
+            # If an image's path is given as a relative path, expand it relative to the location of the source file.
+            if image_args[1].startswith("/") or image_args[1].startswith("~"):
+                img_path = os.path.expanduser(image_args[1])
             else:
-                # Interpreting * and ** as italics and bold tags respectively
-                formatted_line = list(line)
-                for char_num in range(len(formatted_line)):
-                    # The last character of a line can not possibly be a bold tag because bold tags are two characters: **
-                    if char_num > 0 and formatted_line[char_num - 1] == "\\":
-                        formatted_line[char_num - 1] = ""
+                img_path = os.path.dirname(obj.path) + "/" + image_args[1]
+            
+            if len(image_args) == 3:
+                img_line = f"</p><img src=\"{img_path}\" id=\"{image_args[2]}\"><p>"
+                temp_body = temp_body.replace(line, img_line)
+            else:
+                img_line = f"</p><img src=\"{img_path}\"><p>"
+                temp_body = temp_body.replace(line, img_line)
+            continue
+        else:
+            # Interpreting * and ** as italics and bold tags respectively
+            # Code is marked with ```. If an opening tag for code is found, * and ** will be ignored until the next ``` is found.
+            ## Add continue statements here (?) Or maybe that is redundant, since the whole thing is built with if and else statements, and adding continues will make the code less readable.
+            formatted_line = list(line)
+            for char_num in range(len(formatted_line)):
+                if char_num > 0 and formatted_line[char_num - 1] == "\\":
+                    formatted_line[char_num - 1] = ""
+                # The last character of a line can not possibly be a bold tag because bold tags are two characters: **
+                elif char_num == (len(formatted_line) - 1) and not code_encountered:
+                    italics_encountered, previous_bold_or_italics = handle_italics(formatted_line, char_num, italics_encountered, previous_bold_or_italics)
+                # Similarly the second-to-last character of a line can not possibly be a code tag because code tags are three characters: ``
+                elif char_num == (len(formatted_line) - 2) and not code_encountered:
+                    italics_encountered, previous_bold_or_italics = handle_italics(formatted_line, char_num, italics_encountered, previous_bold_or_italics)
+                    bold_encountered, previous_bold_or_italics = handle_bold(formatted_line, char_num, bold_encountered, previous_bold_or_italics)
+                else:
+                    if code_encountered:
+                        code_encountered = handle_code(formatted_line, char_num, code_encountered)
                         continue
-                    elif char_num == (len(formatted_line) - 1):
-                        italics_encountered = handle_italics(formatted_line, char_num, italics_encountered)
-                    elif char_num == (len(formatted_line) - 2):
-                        italics_encountered = handle_italics(formatted_line, char_num, italics_encountered)
-                        bold_encountered = handle_bold(formatted_line, char_num, bold_encountered)
+                    # If three sequential asterisks *** are found, it is ambiguous whether to interpret this as <em><strong> or <strong><em>. This can lead to incorrect HTML nesting. In order to this, the order in which asterisks are replaced should depend on whether a bold or italics tag was seen more recently.
+                    elif formatted_line[char_num] == "*" and formatted_line[char_num + 1] == "*" and formatted_line[char_num + 2] == "*":
+                        if previous_bold_or_italics == "italics":
+                            # The function handle_italics isn't used here, as it will not trigger, since the * is followed by an *.
+                            # Instead of using handle_italics, the * is replaced manually.
+                            if italics_encountered == False:
+                                formatted_line[char_num] = "<em>"
+                                italics_encountered = True
+                                previous_bold_or_italics = "italics"
+                            else:
+                                formatted_line[char_num] = "</em>"
+                                italics_encountered = False
+                                previous_bold_or_italics = "italics"
+                        else:
+                            bold_encountered, previous_bold_or_italics = handle_bold(formatted_line, char_num, bold_encountered, previous_bold_or_italics)
                     else:
                         code_encountered = handle_code(formatted_line, char_num, code_encountered)
-                        italics_encountered = handle_italics(formatted_line, char_num, italics_encountered)
-                        bold_encountered = handle_bold(formatted_line, char_num, bold_encountered)
-                temp_body = temp_body.replace(line, ''.join(formatted_line))
-        temp_body = temp_body.replace("\n", "<br>")
-        temp_body = temp_body.replace("\t", "&emsp;")
-        temp = temp.replace("(BODY)", temp_body) 
-        return temp
+                        italics_encountered, previous_bold_or_italics = handle_italics(formatted_line, char_num, italics_encountered, previous_bold_or_italics)
+                        bold_encountered, previous_bold_or_italics = handle_bold(formatted_line, char_num, bold_encountered, previous_bold_or_italics)
+            temp_body = temp_body.replace(line, ''.join(formatted_line))
+    temp_body = temp_body.replace("\n", "<br>")
+    temp_body = temp_body.replace("\t", "&emsp;")
+    temp = temp.replace("(BODY)", temp_body) 
+    return temp
 
 ### Remove any .html files that are currently in the output directory that were not created during this run of the script. This is to provide "overwrite" functionality.
 

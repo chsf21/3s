@@ -27,7 +27,7 @@ In order to generate a website, four components are needed:
 * The Python script
 
 ## Source files: Writing a post
-Each source file represents one post on the generated website. They are plain text files and should have filenames that end with either ".txt" or no file extension (files with other file extensions will be ignored). Details of where the source files should be placed will be explained in section [The configuration file](#the-configuration-file).
+Each source file represents one post on the generated website. They are plain text files and should have filenames that end with either ".txt" or no file extension (files with other file extensions and dotfiles will be ignored). Details of where the source files should be placed will be explained in section [The configuration file](#the-configuration-file).
 
 Example source files are included in the "doc" directory. (They mostly use text from Wikipedia and images from Wikimedia Commons.)
 
@@ -35,7 +35,7 @@ Example source files are included in the "doc" directory. (They mostly use text 
 They may contain metadata and body text. The following fields accept metadata when written in a source file (each on its own line):
 
 * TITLE=[Your Title Here]
-* DATE=[MM/DD/YY] [Hour:Minute] (Entering the hour and minute is optional. If it is used, it must be written in the 24-hour format. It is possible to include the time in some source files while excluding it in others.) (If the year is written as YYYY instead of YY, the program will trim it and format it to YY.)
+* DATE=[MM/DD/YY] [Hour:Minute] (Entering the hour and minute is optional. If it is used, it must be written in the 24-hour format. It is possible to include the time in some source files while excluding it in others.) (If the year is written as YYYY instead of YY, the program will trim it and format it to YY.) (If a date is left blank or entered incorrectly, the post's date will default to 01/01/00 for sorting purposes, and no date will display for that post.)
 * CATEGORIES=[category1,category2,category3] (This can also be written as "C=" or "CATEGORY=")
 * NUMBER=[x] (This field is optional. In it an integer can be entered. This integer will become associated with this source file and can be used for designating the order in which posts appear on the generated website. See section [The Python script](#the-python-script-command-line-options) below.)
 
