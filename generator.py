@@ -424,6 +424,7 @@ while obj_count < len(post_objects):
         posts_per_page = contents.count("(POST)")
     for x in range(posts_per_page):
         if obj_count == len(post_objects):
+            contents = contents.replace("(POST)", "")
             break
         contents = contents.replace("(POST)", format_post(post_objects[obj_count]), 1)
         obj_count += 1
