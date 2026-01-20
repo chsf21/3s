@@ -455,9 +455,9 @@ for obj in post_objects:
 main_pages = insert_posts("index", "page", formatted_posts)
 
 ### Format the navigation_template
+# Parse the navigation_template
 with open(navigation_template, "r") as f:
     navigation = f.read()
-
 first = ""
 previous = ""
 nxt = ""
@@ -477,7 +477,7 @@ for line in navigation.splitlines():
         continue
 
 
-# Format the navigation_template appropriately
+# Format the navigation_template appropriately for page_list[page_number]
 def format_navigation(page_list, page_numbers, page_number):
     formatted_nav = navigation
     # Remove necessary lines from the formatted navigation_template
@@ -521,5 +521,5 @@ def final_process_pages(page_list):
         with open(page_list[page_number], "w") as f:
             f.write(contents)
 
-# Insert navigation template for list "main_pages"
+# Insert navigation template and page numbers for list "main_pages"
 final_process_pages(main_pages)
