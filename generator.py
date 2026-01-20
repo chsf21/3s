@@ -1,4 +1,3 @@
-## Proof that previous_bold_or_italics never becomes equal to "bold" for some reason.
 ### = Annotation for section of code
 ## = Todo
 # = General annotations, explains pieces of code.
@@ -257,7 +256,6 @@ else:
 
 ### Assign post numbers to all objects (numbers reflect the actual order of posts in the list post_objects. 
 # This is different from meta_number, which corresponds with the optional "NUMBER=" field in source files. meta_number is used to facilitate sorting by number with -n. If the user does not sort by -n, then meta_number may not represent the actual position of an object in post_objects.)
-
 # Note: reverse_mode is False when the user selects -r (see above near beginning of file)
 if reverse_mode == False:
     for obj in post_objects:
@@ -406,21 +404,13 @@ def format_post(obj):
     temp = temp.replace("(BODY)", temp_body) 
     return temp
 
-### Remove any .html files that are currently in the output directory that were not created during this run of the script. This is to provide "overwrite" functionality.
-
-existing_files = os.listdir(output_dir)
-for existing_file in existing_files:
-    if existing_file.endswith(".html"):
-        os.remove(output_dir + "/" + existing_file)
-
 ### Insert formatted posts (returned by format_post) into page_template. Create a new page when necessary.
 # first_page_filename should be a the filename of the .html file to be generated. For example: "index"
 # subsequent_page_filename should be the filename of all subsequently generated .html files. 
-# These files will look like: subsequent_page_filename[page number].html
+# These files will look like: subsequent_page_filename[page_count].html
+# page_count starts at 2, as it will only be used for the purpose of providing a page number afer subsequent_page_filename
 # formatted_posts should be a list of posts that were already formatted by the function format_post.
 def insert_posts(first_page_filename, subsequent_page_filename, formatted_posts):
-    # page_count increases every time a new page is created and is used in the filename of all generated pages from page 2 onwards, like this: subsequent_page_filename[page_count]
-    # Therefore page_count should start at 2
     page_count = 2
     post_count = 0
     current_page = shutil.copyfile(page_template, output_dir + first_page_filename + ".html")
@@ -447,12 +437,19 @@ def insert_posts(first_page_filename, subsequent_page_filename, formatted_posts)
             page_count += 1
     return page_list
 
-# Loop through every object in post_objects. For each object, format it using format_post and append it to the list formatted_posts. 
-formatted_posts = list()
+### Loop through every object in post_objects. For each object, format it using format_post and append it to the list all_formatted_posts. 
+all_formatted_posts = list()
 for obj in post_objects:
-    formatted_posts.append(format_post(obj))
-# Call insert_posts to generate .html pages in output_dir for every post. Save paths of generated pages to list pages.
-main_pages = insert_posts("index", "page", formatted_posts)
+    all_formatted_posts.append(format_post(obj))
+
+### Remove any .html files that are currently in the output directory that were not created during this run of the script. This is to provide "overwrite" functionality.
+existing_files = os.listdir(output_dir)
+for existing_file in existing_files:
+    if existing_file.endswith(".html"):
+        os.remove(output_dir + "/" + existing_file)
+
+### Call insert_posts to generate .html pages in output_dir for every post. Save paths of generated pages to a list.
+main_pages = insert_posts("index", "page", all_formatted_posts)
 
 ### Format the navigation_template
 # Parse the navigation_template
