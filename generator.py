@@ -318,6 +318,7 @@ def handle_code(string_as_list, index, code_encountered_flag):
         return code_encountered_flag
 
 ### Function for finding and replacing tags in post_template with post object properties. Also formats content within the body of the source file.
+### Returns the formatted post as a string
 def format_post(obj):
     with open(post_template, "r") as f:
         temp = f.read()
@@ -413,30 +414,45 @@ for existing_file in existing_files:
         os.remove(output_dir + "/" + existing_file)
 
 ### Insert formatted posts (returned by format_post) into page_template. Create a new page when necessary.
-current_page = shutil.copyfile(page_template, output_dir + "index.html")
-pages = [current_page]
-page_count = 2
-obj_count = 0
-
-while obj_count < len(post_objects):
-    with open(current_page, "r") as f:
-        contents = f.read()
-        posts_per_page = contents.count("(POST)")
-    for x in range(posts_per_page):
-        if obj_count == len(post_objects):
-            contents = contents.replace("(POST)", "")
+# first_page_filename should be a the filename of the *first* .html file to be generated. For example: "index"
+# subsequent_page_filename should be the filename of all subsequently generated .html files. These files will look like: page_filename[page number].html
+# formatted_posts should be a list of posts that were already formatted by the function format_post.
+def insert_posts(first_page_filename, subsequent_page_filename, formatted_posts):
+    # page_count increases every time a new page is created and is used in the filename of the generated .html file.
+    # This is besides for the first page, which will have the filename of whatever is passed as "current_page"
+    # Therefore page_count should start at 2
+    page_count = 2
+    post_count = 0
+    current_page = shutil.copyfile(page_template, output_dir + first_page_filename + ".html")
+    page_list = list()
+    page_list.append(current_page)
+    while post_count < len(formatted_posts):
+        with open(current_page, "r") as f:
+            contents = f.read()
+            posts_per_page = contents.count("(POST)")
+        for x in range(posts_per_page):
+            if post_count == len(formatted_posts):
+                contents = contents.replace("(POST)", "")
+                break
+            contents = contents.replace("(POST)", formatted_posts[post_count], 1)
+            post_count += 1
+        with open(current_page, "w") as f:
+            f.write(contents)
+        if post_count == len(post_objects):
             break
-        contents = contents.replace("(POST)", format_post(post_objects[obj_count]), 1)
-        obj_count += 1
-    with open(current_page, "w") as f:
-        f.write(contents)
-    if obj_count == len(post_objects):
-        break
-    else:
-        new_page = output_dir + "page" + str(page_count) + ".html"
-        current_page = shutil.copyfile(page_template, new_page)
-        pages.append(new_page)
-        page_count += 1
+        else:
+            new_page = output_dir + subsequent_page_filename + str(page_count) + ".html"
+            current_page = shutil.copyfile(page_template, new_page)
+            page_list.append(new_page)
+            page_count += 1
+    return page_list
+
+# Loop through every object in post_objects. For each object, format it using format_post and append it to the list formatted_posts. 
+formatted_posts = list()
+for obj in post_objects:
+    formatted_posts.append(format_post(obj))
+# Call insert_posts to generate .html pages in output_dir for every post. Save paths of generated pages to list pages.
+pages = insert_posts("index", "page", formatted_posts)
 
 ### Format the navigation_template
 with open(navigation_template, "r") as f:
