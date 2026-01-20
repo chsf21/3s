@@ -414,12 +414,12 @@ for existing_file in existing_files:
         os.remove(output_dir + "/" + existing_file)
 
 ### Insert formatted posts (returned by format_post) into page_template. Create a new page when necessary.
-# first_page_filename should be a the filename of the *first* .html file to be generated. For example: "index"
-# subsequent_page_filename should be the filename of all subsequently generated .html files. These files will look like: page_filename[page number].html
+# first_page_filename should be a the filename of the .html file to be generated. For example: "index"
+# subsequent_page_filename should be the filename of all subsequently generated .html files. 
+# These files will look like: subsequent_page_filename[page number].html
 # formatted_posts should be a list of posts that were already formatted by the function format_post.
 def insert_posts(first_page_filename, subsequent_page_filename, formatted_posts):
-    # page_count increases every time a new page is created and is used in the filename of the generated .html file.
-    # This is besides for the first page, which will have the filename of whatever is passed as "current_page"
+    # page_count increases every time a new page is created and is used in the filename of all generated pages from page 2 onwards, like this: subsequent_page_filename[page_count]
     # Therefore page_count should start at 2
     page_count = 2
     post_count = 0
@@ -452,7 +452,7 @@ formatted_posts = list()
 for obj in post_objects:
     formatted_posts.append(format_post(obj))
 # Call insert_posts to generate .html pages in output_dir for every post. Save paths of generated pages to list pages.
-pages = insert_posts("index", "page", formatted_posts)
+main_pages = insert_posts("index", "page", formatted_posts)
 
 ### Format the navigation_template
 with open(navigation_template, "r") as f:
@@ -476,10 +476,9 @@ for line in navigation.splitlines():
         last = line
         continue
 
-page_numbers = range(len(pages))
 
 # Format the navigation_template appropriately
-def format_navigation(page_number):
+def format_navigation(page_list, page_numbers, page_number):
     formatted_nav = navigation
     # Remove necessary lines from the formatted navigation_template
     # The first page should not contain hyperlinks for (FIRST) or (PREVIOUS)
@@ -497,30 +496,30 @@ def format_navigation(page_number):
 
     # Replace keywords in navigation_template with appropriate values
     if not first_page:
-        new_previous = previous.replace("(PREVIOUS)", os.path.basename(pages[page_number - 1]))
+        new_previous = previous.replace("(PREVIOUS)", os.path.basename(page_list[page_number - 1]))
         formatted_nav = formatted_nav.replace(previous, new_previous)
-        new_first = first.replace("(FIRST)", os.path.basename(pages[0]))
+        new_first = first.replace("(FIRST)", os.path.basename(page_list[0]))
         formatted_nav = formatted_nav.replace(first, new_first)
     if not last_page:
-        new_nxt = nxt.replace("(NEXT)", os.path.basename(pages[page_number + 1]))
+        new_nxt = nxt.replace("(NEXT)", os.path.basename(page_list[page_number + 1]))
         formatted_nav = formatted_nav.replace(nxt, new_nxt)
-        new_last = last.replace("(LAST)", os.path.basename(pages[len(pages) - 1]))
+        new_last = last.replace("(LAST)", os.path.basename(page_list[len(page_list) - 1]))
         formatted_nav = formatted_nav.replace(last, new_last)
     return formatted_nav
 
 ### Find and replace for all remaining keywords on page_template
-### (all keywords which could not be replaced earlier in the script when the initial .html files were outputted) 
-
+### (keywords which could not be replaced earlier in the script when the initial .html files were outputted) 
 # Replace (NAVIGATION) in the page_template with the result of format_navigation
 # Replace (NUMBER) in the page_template with the current page number
-def process_pages(page_number):
-    with open(pages[page_number], "r") as f:
-        contents = f.read()
-    contents = contents.replace("(NAVIGATION)", format_navigation(page_number))
-    contents = contents.replace("(NUMBER)", str(page_number + 1))
-    with open(pages[page_number], "w") as f:
-        f.write(contents)
+def final_process_pages(page_list):
+    page_numbers = range(len(page_list))
+    for page_number in page_numbers:
+        with open(page_list[page_number], "r") as f:
+            contents = f.read()
+        contents = contents.replace("(NAVIGATION)", format_navigation(page_list, page_numbers, page_number))
+        contents = contents.replace("(NUMBER)", str(page_number + 1))
+        with open(page_list[page_number], "w") as f:
+            f.write(contents)
 
-for page_number in page_numbers:
-    process_pages(page_number)
-
+# Insert navigation template for list "main_pages"
+final_process_pages(main_pages)
