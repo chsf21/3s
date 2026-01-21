@@ -551,7 +551,7 @@ def format_navigation(page_list, page_numbers, page_number):
 # Replace (NAVIGATION) in the page_template with the result of format_navigation
 # Replace (NUMBER) in the page_template with the current page number
 # Replace (STYLESHEET) in the page_template with the absolute path of the style sheet that was specified in the config file
-def final_process_pages(page_list):
+def final_process_pages(page_list, category):
     page_numbers = range(len(page_list))
     for page_number in page_numbers:
         with open(page_list[page_number], "r") as f:
@@ -559,10 +559,14 @@ def final_process_pages(page_list):
         contents = contents.replace("(NAVIGATION)", format_navigation(page_list, page_numbers, page_number))
         contents = contents.replace("(NUMBER)", str(page_number + 1))
         contents = contents.replace("(STYLESHEET)", stylesheet)
+        if category != "":
+            contents = contents.replace("(CATEGORY)", category)
+        else:
+            contents = contents.replace("(CATEGORY)", "All Posts")
         with open(page_list[page_number], "w") as f:
             f.write(contents)
 
 # Insert navigation template and page numbers for list "main_pages"
-final_process_pages(main_pages)
+final_process_pages(main_pages, "")
 for category in category_pages:
-    final_process_pages(category_pages[category])
+    final_process_pages(category_pages[category], category)
