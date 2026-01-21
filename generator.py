@@ -12,7 +12,7 @@ from operator import attrgetter
 ### Handle command line options/arguments
 args = sys.argv[1:]
 short_options = "htnfrc:o:"
-long_options = ["help", "sort-by-title", "sort-by-number", "sort-by-filename", "reversed", "config=", "output="]
+long_options = ["help", "sort-by-title", "sort-by-number", "sort-by-filename", "reversed", "config=", "output=", "no-subdirs"]
 try:
     arguments, trailing = getopt.getopt(args, short_options, long_options)
 except getopt.GetoptError as err:
@@ -32,6 +32,7 @@ file_mode = False
 number_mode = False
 title_mode = False
 custom_output = False
+no_subdirs = False
 for option, value in arguments:
     if option in ("-c", "--config"):
         config = os.path.expanduser(value)
@@ -54,6 +55,7 @@ for option, value in arguments:
         print("-r, --reversed\tSort posts in reverse order, from lowest to highest / oldest to newest.")
         print("-c 'path/to/config', --config='path/to/config'\tManually specify the configuration file to be used for this run of the script.")
         print("-o 'path/to/output/directory', --output='path/to/output/directory'\tManually specify the output directory (Avoid overwriting the contents of the default output directory specified in the configuration file)")
+        print("--no-subdirs\tDo not create subdirectories in the output directory for each category. All .html files, including categorical pages, are outputted to the root of the output directory.")
         print("\nFor more information and a user guide, see README.md\nAvailable online at: https://github.com/chsf21/3s/")
         sys.exit(0)
     elif option in ("-t", "--sort-by-title"):
@@ -67,6 +69,8 @@ for option, value in arguments:
         reverse_mode = False
     elif option in ("-f", "--sort-by-filename"):
         file_mode = True
+    elif option in ("--no-subdirs"):
+        no_subdirs = True
 
 config = os.path.abspath(config)
 
@@ -86,6 +90,7 @@ def validate_config(config, section, keys):
             print(f"For information on how to set up and write the config file, please see the documentation at: https://github.com/chsf21/3s/")
             sys.exit(2)
 
+# The key "StyleSheet" is optional and is therefore omitted here
 validate_config(config, 'Paths', ['OutputDirectory', 'SourceDirectory', 'PageTemplate', 'PostTemplate', 'NavigationTemplate'])
 
 # Get paths (by expanding them properly into absolute paths). Check if paths specified in config file point to existing files and directories.
@@ -117,6 +122,7 @@ source_dir = get_path(config, 'Paths', 'SourceDirectory', "source directory", is
 page_template = get_path(config, 'Paths', 'PageTemplate', "page template", is_directory=False)
 post_template = get_path(config, 'Paths', 'PostTemplate', "post template", is_directory=False)
 navigation_template = get_path(config, 'Paths', 'NavigationTemplate', "navigation template", is_directory=False)
+stylesheet = get_path(config, 'Paths', 'StyleSheet', "style sheet", is_directory=False)
 
 ### Create objects for blog posts located in source_dir
 ### Source files will be parsed for metadata and body text, which will then be saved in object properties
@@ -405,19 +411,30 @@ def format_post(obj):
     return temp
 
 ### Insert formatted posts (returned by format_post) into page_template. Create a new page when necessary.
-# first_page_filename should be a the filename of the .html file to be generated. For example: "index"
-# subsequent_page_filename should be the filename of all subsequently generated .html files. 
+# *first_page_filename* should be a the filename of the .html file to be generated. For example: "index"
+# *subsequent_page_filename* should be the filename of all subsequently generated .html files. 
 # These files will look like: subsequent_page_filename[page_count].html
 # page_count starts at 2, as it will only be used for the purpose of providing a page number afer subsequent_page_filename
-# formatted_posts should be a list of posts that were already formatted by the function format_post.
-def insert_posts(first_page_filename, subsequent_page_filename, formatted_posts):
+# *subdir* should be the subdirectory within the output_dir where generated .html files should be output.
+# If no subdirectory is desired, use the empty string "" for subdir.
+# *formatted_posts* should be a list of posts that were already formatted by the function format_post.
+
+def insert_posts(first_page_filename, subsequent_page_filename, subdir, formatted_posts):
     page_count = 2
     post_count = 0
-    current_page = shutil.copyfile(page_template, output_dir + first_page_filename + ".html")
+    if (no_subdirs == False) and (subdir != ""):
+        if os.path.isdir(output_dir + subdir):
+            pass
+        else:
+            os.mkdir(output_dir + subdir)
+        subdir = subdir + "/"
+    else:
+        subdir = ""
+    current_page = shutil.copyfile(page_template, output_dir + subdir + first_page_filename + ".html")
     page_list = list()
     page_list.append(current_page)
-    while post_count < len(formatted_posts):
-        with open(current_page, "r") as f:
+    while post_count <= len(formatted_posts):
+        with open(page_template, "r") as f:
             contents = f.read()
             posts_per_page = contents.count("(POST)")
         for x in range(posts_per_page):
@@ -428,28 +445,54 @@ def insert_posts(first_page_filename, subsequent_page_filename, formatted_posts)
             post_count += 1
         with open(current_page, "w") as f:
             f.write(contents)
-        if post_count == len(post_objects):
+        if post_count == len(formatted_posts):
             break
         else:
-            new_page = output_dir + subsequent_page_filename + str(page_count) + ".html"
+            new_page = output_dir + subdir + subsequent_page_filename + str(page_count) + ".html"
             current_page = shutil.copyfile(page_template, new_page)
             page_list.append(new_page)
             page_count += 1
     return page_list
 
-### Loop through every object in post_objects. For each object, format it using format_post and append it to the list all_formatted_posts. 
+### Loop through every object in post_objects. For each object, format it using format_posts. 
+# All formatted posts are appended to the list all_formatted_posts
+# Formatted posts with categories are appended to a list of formatted posts for that specific category.
+# Categorical lists of formatted posts are contained within the dictionary category_formatted_posts
 all_formatted_posts = list()
+category_formatted_posts = dict()
 for obj in post_objects:
-    all_formatted_posts.append(format_post(obj))
+    formatted_post = format_post(obj)
+    all_formatted_posts.append(formatted_post)
+    for category in obj.categories:
+        try:
+            category_formatted_posts[category].append(formatted_post)
+        except:
+            category_formatted_posts[category] = list()
+            category_formatted_posts[category].append(formatted_post)
 
-### Remove any .html files that are currently in the output directory that were not created during this run of the script. This is to provide "overwrite" functionality.
-existing_files = os.listdir(output_dir)
-for existing_file in existing_files:
-    if existing_file.endswith(".html"):
-        os.remove(output_dir + "/" + existing_file)
+### Remove any .html files that are currently in the output directory and its subdirectories that were not created during this run of the script. 
+### This is to provide "overwrite" functionality.
+for dirpath, dirnames, filenames in os.walk(output_dir):
+    for file in filenames:
+        if file.endswith(".html"):
+            os.remove(os.path.join(dirpath, file))
+# If any directory is empty after this "overwrite", remove the directory.
+for dirpath, dirnames, filenames in os.walk(output_dir):
+    for dirname in dirnames:
+        path = os.path.join(dirpath, dirname)
+        if len(os.listdir(path)) == 0:
+            os.rmdir(path)
 
-### Call insert_posts to generate .html pages in output_dir for every post. Save paths of generated pages to a list.
-main_pages = insert_posts("index", "page", all_formatted_posts)
+### Call insert_posts to generate .html pages in output_dir for every post. Save list of paths of generated pages.
+# Generate main pages (contain all posts)
+main_pages = insert_posts("index", "page", "", all_formatted_posts)
+# Generate categorial pages.
+category_pages = dict()
+for category in category_formatted_posts:
+    try:
+        category_pages[category] += insert_posts("index", category, category, category_formatted_posts[category])
+    except:
+        category_pages[category] = insert_posts("index", category, category, category_formatted_posts[category])
 
 ### Format the navigation_template
 # Parse the navigation_template
@@ -486,7 +529,7 @@ def format_navigation(page_list, page_numbers, page_number):
         formatted_nav = formatted_nav.replace(first, "")
         formatted_nav = formatted_nav.replace(previous, "")
         first_page = True
-    elif page_number == page_numbers[-1]:
+    if page_number == page_numbers[-1]:
         formatted_nav = formatted_nav.replace(last, "")
         formatted_nav = formatted_nav.replace(nxt, "")
         last_page = True
@@ -505,9 +548,9 @@ def format_navigation(page_list, page_numbers, page_number):
     return formatted_nav
 
 ### Find and replace for all remaining keywords on page_template
-### (keywords which could not be replaced earlier in the script when the initial .html files were outputted) 
 # Replace (NAVIGATION) in the page_template with the result of format_navigation
 # Replace (NUMBER) in the page_template with the current page number
+# Replace (STYLESHEET) in the page_template with the absolute path of the style sheet that was specified in the config file
 def final_process_pages(page_list):
     page_numbers = range(len(page_list))
     for page_number in page_numbers:
@@ -515,8 +558,11 @@ def final_process_pages(page_list):
             contents = f.read()
         contents = contents.replace("(NAVIGATION)", format_navigation(page_list, page_numbers, page_number))
         contents = contents.replace("(NUMBER)", str(page_number + 1))
+        contents = contents.replace("(STYLESHEET)", stylesheet)
         with open(page_list[page_number], "w") as f:
             f.write(contents)
 
 # Insert navigation template and page numbers for list "main_pages"
 final_process_pages(main_pages)
+for category in category_pages:
+    final_process_pages(category_pages[category])

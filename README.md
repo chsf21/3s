@@ -85,6 +85,9 @@ Keywords that may be entered in this file's \<body\> are:
 * (POST) - Gets replaced with a single post.
 * (NAVIGATION) - Gets replaced with navigation links for moving between pages (See section [Navigation template](#navigation-template)).
 * (NUMBER) - Gets replaced with the current page number.
+* (STYLESHEET) - Gets replaced with the absolute path of the style sheet specified in the configuration file (see section [The configuration file](#the-configuration-file)). Therefore it should be placed within an HTML tag, like: \<link rel="stylesheet" href="(STYLESHEET)"\>. This keyword is optional; however, if subdirectories are used (see #), then it is required in order for style sheets to work.
+
+**Note:** The path that (STYLESHEET) will be replaced with in the final outputted page is an absolute path. If you are on a personal computer, this path may contain your name or other personal information. If you would like to avoid this, use the [--no-subdirs option](#disable-subdirectories-in-output-directory) when running the script and manually specify the style sheet's location in the page template.
 
 **Tip:** For classic style webcomic sites, configure the page template to only display one post per page. This is done by writing only one (POST) on the page template.
 
@@ -147,6 +150,7 @@ SourceDirectory = [path/to/source_files_directory]
 PageTemplate = [path/to/page_template.html]
 PostTemplate = [path/to/post_template.html]
 NavigationTemplate = [path/to/navigation_template.html]
+StyleSheet = [path/to/style_sheet.css]
 ```
 
 Paths are not put in quotes. Files and directories specified in the configuration file will not be created automatically; they must be created manually before running the script.
@@ -154,14 +158,17 @@ Relative paths may be used. They will be interpreted relative to the location of
 
 Explanation:
 
-* OutputDirectory - Where the generated site pages will be output. By default, all existing .html files in this directory will be deleted upon running the script. This is in order to provide the behavior of "overwriting" the directory. If you would like to avoid overwriting the output directory, see the command line option for [specifying an output directory](#specify-output-directory).
+* OutputDirectory - Where the generated site pages will be output. By default, all existing .html files in this directory (and its subdirectories) will be deleted upon running the script. This is in order to provide the behavior of "overwriting" the directory. If you would like to avoid overwriting the output directory, see the command line option for [specifying an output directory](#specify-output-directory).
+
+**Note:** If a subdirectory in the output directory is empty after all of its old, existing .html files are deleted, then the subdirectory itself will also be deleted.
 
 **Tip:** If you are running this script on a web server, consider setting OutputDirectory to the directory where your website will be hosted. If your site is hosted on GitHub, consider setting OutputDirectory to a directory that is initialized with git, so you can simply run
 	git push
 to upload any changes to your site.
 
 * SourceDirectory - All source files must be contained within a directory. That directory should not contain files other than source files (.swp files will be ignored, so users of text editors like Vim need not be concerned about swap files causing issues). It is possible to place the source files within subdirectories (for example, to facilitate better organization of files), as the SourceDirectory will be traversed recursively. Symlinks placed inside the SourceDirectory will be ignored.
-* Template files - See [previous section](#templates).
+* Template files - See [previous section about templates.](#templates)
+* StyleSheet - See [previous section about the page template.](#page-template)
 
 By default the Python script will search for the configuration file named "config.ini" in the same directory as where the script is located. 
 
@@ -231,4 +238,14 @@ python3 generator.py --output="path/to/output/directory"
 
 ### Specify configuration file
 
-The other command line option that is available is [-c for manually specifying the path to a configuration file](#manually-specifying-the-path-to-a-configuration-file)
+See above: [-c for manually specifying the path to a configuration file](#manually-specifying-the-path-to-a-configuration-file)
+
+### Disable subdirectories in output directory
+
+By default the script will generate subdirectories for each category of posts (for defining categories for posts, see above: [Metadata](#metadata)). In addition to all posts being displayed on the generated site's "main pages" (the pages outputted to the root of the output directory), categorical posts will be outputted to their respective subdirectories.
+
+Categorical posts can be outputted to the root of the output directory instead of subdirectories by using the command line option:
+```
+python3 generator.py --no-subdirs
+```
+
