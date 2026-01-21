@@ -86,7 +86,10 @@ Keywords that may be entered in this file's \<body\> are:
 * (NAVIGATION) - Gets replaced with navigation links for moving between pages (See section [Navigation template](#navigation-template)).
 * (NUMBER) - Gets replaced with the current page number.
 * (CATEGORY) - On pages that only display posts of a specific category this will be replaced with the name of the category. For pages that are not of a specific category (i.e. the main pages of the site that contain all posts), (CATEGORY) will be replaced with "All Posts".
+* (CATEGORY_LINKS) - This will be replaced with an unordered list of links to all category pages. A link to the first page of the site--"index.html"--will also be displayed as "All Posts". It is recommended to put this keyword within a \<div\> and style it with CSS.
 * (STYLESHEET) - Gets replaced with the absolute path of the style sheet specified in the configuration file (see section [The configuration file](#the-configuration-file)). Therefore it should be placed within an HTML tag, like: \<link rel="stylesheet" href="(STYLESHEET)"\>. This keyword is optional; however, if subdirectories are used (see #), then it is required in order for style sheets to work.
+
+All keywords are optional; however, omitting (POST) entirely will result in no posts being displayed on the generated site.
 
 **Note:** The path that (STYLESHEET) will be replaced with in the final outputted page is an absolute path. If you are on a personal computer, this path may contain your name or other personal information. If you would like to avoid this, use the [--no-subdirs option](#disable-subdirectories-in-output-directory) when running the script and manually specify the style sheet's location in the page template.
 

@@ -488,11 +488,14 @@ for dirpath, dirnames, filenames in os.walk(output_dir):
 main_pages = insert_posts("index", "page", "", all_formatted_posts)
 # Generate categorial pages.
 category_pages = dict()
+category_links = dict()
 for category in category_formatted_posts:
     try:
         category_pages[category] += insert_posts("index", category, category, category_formatted_posts[category])
     except:
         category_pages[category] = insert_posts("index", category, category, category_formatted_posts[category])
+        # Add the first page of every category to dictionary category_links
+        category_links[category] = category_pages[category][0]
 
 ### Format the navigation_template
 # Parse the navigation_template
@@ -551,7 +554,9 @@ def format_navigation(page_list, page_numbers, page_number):
 # Replace (NAVIGATION) in the page_template with the result of format_navigation
 # Replace (NUMBER) in the page_template with the current page number
 # Replace (STYLESHEET) in the page_template with the absolute path of the style sheet that was specified in the config file
-def final_process_pages(page_list, category):
+# Replace (CATEGORY) with the current page's category if applicable. Otherwise replace it with "All Posts".
+# Replace (CATEGORY_LINKS) with links to all of the first pages of each category.
+def final_process_pages(page_list, category, category_links, main_pages):
     page_numbers = range(len(page_list))
     for page_number in page_numbers:
         with open(page_list[page_number], "r") as f:
@@ -563,10 +568,15 @@ def final_process_pages(page_list, category):
             contents = contents.replace("(CATEGORY)", category)
         else:
             contents = contents.replace("(CATEGORY)", "All Posts")
+        links = '<ul><li><a href="' + main_pages[0] + '">All Posts</a></li>'
+        for category in category_links:
+            links = links + '<li><a href="' + category_links[category] + '">' + category + '</a></li>'
+            if category == list(category_links.keys())[-1]:
+                contents = contents.replace("(CATEGORY_LINKS)", links + "</ul>")
         with open(page_list[page_number], "w") as f:
             f.write(contents)
 
 # Insert navigation template and page numbers for list "main_pages"
-final_process_pages(main_pages, "")
+final_process_pages(main_pages, "", category_links, main_pages)
 for category in category_pages:
-    final_process_pages(category_pages[category], category)
+    final_process_pages(category_pages[category], category, category_links, main_pages)
