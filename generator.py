@@ -490,10 +490,14 @@ main_pages = insert_posts("index", "page", "", all_formatted_posts)
 category_pages = dict()
 category_links = dict()
 for category in category_formatted_posts:
+    if no_subdirs:
+        category_name = category
+    else:
+        category_name = "index"
     try:
-        category_pages[category] += insert_posts("index", category, category, category_formatted_posts[category])
+        category_pages[category] += insert_posts(category_name, category, category, category_formatted_posts[category])
     except:
-        category_pages[category] = insert_posts("index", category, category, category_formatted_posts[category])
+        category_pages[category] = insert_posts(category_name, category, category, category_formatted_posts[category])
         # Add the first page of every category to dictionary category_links
         category_links[category] = category_pages[category][0]
 
