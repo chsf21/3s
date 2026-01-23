@@ -581,7 +581,8 @@ def format_navigation(page_list, page_numbers, page_number, nav_string, nav_dict
 # Replace (CATEGORY_LINKS) with links to all of the first pages of each category.
 # Replace (DATE_LINKS) in a similar way to (CATEGORY_LINKS), except the pages represent months rather than categories 
 def format_links(links_dict, beginning_link):
-    links = beginning_link
+    links = "<ul>"
+    links = links + beginning_link
     for key in links_dict:
         links = links + '<li><a href="' + links_dict[key] + '">' + key + '</a></li>'
         if key == list(links_dict.keys())[-1]:
@@ -599,7 +600,7 @@ def final_process_pages(page_list, label, category_links, date_links,  main_page
             contents = contents.replace("(LABEL)", label)
         else:
             contents = contents.replace("(LABEL)", "All Posts")
-        beginning_link = '<ul><li><a href="' + main_pages[0] + '">All Posts</a></li>'
+        beginning_link = '<li><a href="' + main_pages[0] + '">All Posts</a></li>'
         contents = contents.replace("(CATEGORY_LINKS)", format_links(category_links, beginning_link))
         contents = contents.replace("(DATE_LINKS)", format_links(date_links, ""))
         with open(page_list[page_number], "w") as f:

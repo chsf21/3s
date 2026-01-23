@@ -1,7 +1,7 @@
 TITLE=Bulldog
-DATE=09/24/25
 C=dogs,pets
 NUMBER=2
+DATE=10/15/2025
 
 (START)
 The Bulldog is a British breed of dog of mastiff type.

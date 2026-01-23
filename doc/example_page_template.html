@@ -6,15 +6,21 @@
 	</head>
 	<body>
 		<h1 id="welcome">Dogs and Cats Blog</h1>
-		<h2 id="category">Viewing: (LABEL)</h2>
+		<h2 id="page-label">Viewing: (LABEL)</h2>
 		<h2 id="page-number">Page #(NUMBER)</h2>
-		<div class="links" id="category-links">Categories: (CATEGORY_LINKS)</div>
-		<div class="links" id="date-links">Archive: (DATE_LINKS)</div>
-		<div class="posts">
-			(POST)
-			<hr>
-			(POST)
+		<div class="main-content">
+			<div class="posts-navigation">
+				<div class="posts">
+					(POST)
+					<hr>
+					(POST)
+				</div>
+				(NAVIGATION)
+			</div>
+			<div class="links">
+				<div id="category-links">Categories: (CATEGORY_LINKS)</div>
+				<div id="date-links">Archive: (DATE_LINKS)</div>
+			</div>
 		</div>
-		(NAVIGATION)
 	</body>
 </html>
