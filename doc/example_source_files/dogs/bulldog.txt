@@ -1,5 +1,5 @@
 TITLE=Bulldog
-DATE=01/10/26
+DATE=09/24/25
 C=dogs,pets
 NUMBER=2
 
