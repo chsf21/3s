@@ -213,28 +213,30 @@ for file in source_files:
 # Create datetime object for every object in post_objects. Save to obj.date_dt
 # This is later used for sorting by date (if the user chooses to sort by date)
 def default_date(obj):
-    print("Could not extract date. Defaulting to 01/01/00 for " + obj.filename + "'s date. No date will be displayed for this post on the generated website.")
+    print("Could not extract date for source file" + obj.filename + ". Defaulting to 01/01/00 for " + obj.filename + "'s date. No date will be displayed for this post on the generated website.")
     obj.date = ""
     obj.date_dt = datetime.datetime.strptime("01/01/00", '%m/%d/%y')
+    return True
 
 for obj in post_objects:
+    default_date_flag = False
     # If an hour was given for DATE=
     if len(obj.date) == 2:
         obj.fix_year()
         try:
             obj.date_dt = datetime.datetime.strptime(" ".join(obj.date), '%m/%d/%y %H:%M')
         except:
-            default_date(obj)
+            default_date_flag = default_date(obj)
     # If no hour was given
     elif len(obj.date) == 1:
         obj.fix_year()
         try:
             obj.date_dt = datetime.datetime.strptime(obj.date[0], '%m/%d/%y')
         except:
-            default_date(obj)
+            default_date_flag = default_date(obj)
     # If no date was given, default to 01/01/2000 for sorting purposes. (That default date will not display on the generated website.)
     elif obj.date == "":
-        obj.date_dt = datetime.datetime.strptime("01/01/00", '%m/%d/%y')
+        default_date_flag = default_date(obj)
     # If the date was formatted incorrectly (more than two arguments, so likely not just MM/DD/YY and Hour:Minute), try to extract the proper date.
     else:
         print("DATE value in source file '" + obj.filename + "' is written incorrectly. Please ensure that it is written in MM/DD/YY format or MM/DD/YY Hour:Minute (24hr) format.")
@@ -243,10 +245,13 @@ for obj in post_objects:
         try:
             obj.date_dt = datetime.datetime.strptime(" ".join(obj.date), '%m/%d/%y %H:%M')
         except:
-            default_date(obj)
+            default_date_flag = default_date(obj)
         else:
             print("Attempted to extract date regardless. Date for " + obj.filename + " may display incorrectly.")
-    obj.month_year = obj.date_dt.strftime('%b %Y')
+    # Objects that default to the default date will not be assigned a .month_year property.
+    # This is in order to prevent them from being included in the links in (DATE_LINKS)
+    if not default_date_flag:
+        obj.month_year = obj.date_dt.strftime('%b %Y')
 
 ### Sort post_objects. (Default: By date, newest to oldest. With command line options, it is also possible to sort by filename (-f), title (-t), or meatadata number (-n). These will also be sorted from highest to lowest. To sort from oldest to newest / lowest to highest, use the command line option (-r).
 if file_mode:
@@ -471,11 +476,12 @@ for obj in post_objects:
         except:
             category_formatted_posts[category] = list()
             category_formatted_posts[category].append(formatted_post)
-    try:
-        date_formatted_posts[obj.month_year].append(formatted_post)
-    except:
-        date_formatted_posts[obj.month_year] = list()
-        date_formatted_posts[obj.month_year].append(formatted_post)
+    if hasattr(obj, "month_year"):
+        try:
+            date_formatted_posts[obj.month_year].append(formatted_post)
+        except:
+            date_formatted_posts[obj.month_year] = list()
+            date_formatted_posts[obj.month_year].append(formatted_post)
 
 ### Remove any .html files that are currently in the output directory and its subdirectories that were not created during this run of the script. 
 ### This is to provide "overwrite" functionality.
