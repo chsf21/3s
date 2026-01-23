@@ -114,7 +114,7 @@ Keywords that may be entered in this file are:
 
 ### Navigation template
 
-This is what (POST) on the page template will be replaced with. For this reason, you may want to have it contain only one <div> with class="navigation".
+This is what (POST) on the page template will be replaced with. For this reason, you may want to have it contain only one \<div\> with class="navigation".
 
 Keywords that may be entered in this file are:
 
