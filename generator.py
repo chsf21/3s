@@ -418,6 +418,9 @@ def format_post(obj):
 # *formatted_posts* should be a list of posts that were already formatted by the function format_post.
 
 def insert_posts(first_page_filename, subsequent_page_filename, subdir, formatted_posts):
+    subdir = subdir.replace(" ", "_")
+    first_page_filename = first_page_filename.replace(" ", "_")
+    subsequent_page_filename = subsequent_page_filename.replace(" ", "_")
     page_count = 2
     post_count = 0
     if (no_subdirs == False) and (subdir != ""):
@@ -446,7 +449,7 @@ def insert_posts(first_page_filename, subsequent_page_filename, subdir, formatte
         if post_count == len(formatted_posts):
             break
         else:
-            new_page = output_dir + subdir + subsequent_page_filename + str(page_count) + ".html"
+            new_page = output_dir + subdir + subsequent_page_filename + "_" + str(page_count) + ".html"
             current_page = shutil.copyfile(page_template, new_page)
             page_list.append(new_page)
             page_count += 1
