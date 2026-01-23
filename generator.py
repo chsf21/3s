@@ -156,7 +156,6 @@ for rootdir, dirnames, filenames in os.walk(source_dir, topdown=True, followlink
         source_files.append(file_path)
 
 # Function for pulling metadata out of a source file and saving it to a dict
-data = dict()
 def get_value(dictionary, line, source_key, dict_key):
     if line.startswith(source_key):
         dictionary[dict_key] = line.removeprefix(source_key)
@@ -175,6 +174,7 @@ def get_value(dictionary, line, source_key, dict_key):
 
 # Go through source file line by line. If metadata is encountered, parse it and save it to a dict. Parse body text.
 in_body = False
+data = dict()
 for file in source_files:
     if os.path.getsize(file) == 0:
         continue
@@ -505,53 +505,54 @@ for category in category_formatted_posts:
 # Parse the navigation_template
 with open(navigation_template, "r") as f:
     navigation = f.read()
-first = ""
-previous = ""
-nxt = ""
-last = "" 
+nav_dict = dict()
+nav_dict["first"] = ""
+nav_dict["previous"] = ""
+nav_dict["nxt"] = ""
+nav_dict["last"] = "" 
 for line in navigation.splitlines():
     if "(FIRST)" in line:
-        first = line
+        nav_dict["first"] = line
         continue
     elif "(PREVIOUS)" in line:
-        previous = line
+        nav_dict["previous"] = line
         continue
     elif "(NEXT)" in line:
-        nxt = line
+        nav_dict["nxt"] = line
         continue
     elif "(LAST)" in line:
-        last = line
+        nav_dict["last"] = line
         continue
 
 
 # Format the navigation_template appropriately for page_list[page_number]
-def format_navigation(page_list, page_numbers, page_number):
-    formatted_nav = navigation
+def format_navigation(page_list, page_numbers, page_number, nav_string, nav_dict):
+    formatted_nav = nav_string
     # Remove necessary lines from the formatted navigation_template
     # The first page should not contain hyperlinks for (FIRST) or (PREVIOUS)
     # The last page should not contain hyperlinks for (LAST) or (NEXT)
     first_page = False
     last_page = False
     if page_number == 0:
-        formatted_nav = formatted_nav.replace(first, "")
-        formatted_nav = formatted_nav.replace(previous, "")
+        formatted_nav = formatted_nav.replace(nav_dict["first"], "")
+        formatted_nav = formatted_nav.replace(nav_dict["previous"], "")
         first_page = True
     if page_number == page_numbers[-1]:
-        formatted_nav = formatted_nav.replace(last, "")
-        formatted_nav = formatted_nav.replace(nxt, "")
+        formatted_nav = formatted_nav.replace(nav_dict["last"], "")
+        formatted_nav = formatted_nav.replace(nav_dict["nxt"], "")
         last_page = True
 
     # Replace keywords in navigation_template with appropriate values
     if not first_page:
-        new_previous = previous.replace("(PREVIOUS)", os.path.basename(page_list[page_number - 1]))
-        formatted_nav = formatted_nav.replace(previous, new_previous)
-        new_first = first.replace("(FIRST)", os.path.basename(page_list[0]))
-        formatted_nav = formatted_nav.replace(first, new_first)
+        new_previous = nav_dict["previous"].replace("(PREVIOUS)", os.path.basename(page_list[page_number - 1]))
+        formatted_nav = formatted_nav.replace(nav_dict["previous"], new_previous)
+        new_first = nav_dict["first"].replace("(FIRST)", os.path.basename(page_list[0]))
+        formatted_nav = formatted_nav.replace(nav_dict["first"], new_first)
     if not last_page:
-        new_nxt = nxt.replace("(NEXT)", os.path.basename(page_list[page_number + 1]))
-        formatted_nav = formatted_nav.replace(nxt, new_nxt)
-        new_last = last.replace("(LAST)", os.path.basename(page_list[len(page_list) - 1]))
-        formatted_nav = formatted_nav.replace(last, new_last)
+        new_nxt = nav_dict["nxt"].replace("(NEXT)", os.path.basename(page_list[page_number + 1]))
+        formatted_nav = formatted_nav.replace(nav_dict["nxt"], new_nxt)
+        new_last = nav_dict["last"].replace("(LAST)", os.path.basename(page_list[len(page_list) - 1]))
+        formatted_nav = formatted_nav.replace(nav_dict["last"], new_last)
     return formatted_nav
 
 ### Find and replace for all remaining keywords on page_template
@@ -565,7 +566,7 @@ def final_process_pages(page_list, category, category_links, main_pages):
     for page_number in page_numbers:
         with open(page_list[page_number], "r") as f:
             contents = f.read()
-        contents = contents.replace("(NAVIGATION)", format_navigation(page_list, page_numbers, page_number))
+        contents = contents.replace("(NAVIGATION)", format_navigation(page_list, page_numbers, page_number, navigation, nav_dict))
         contents = contents.replace("(NUMBER)", str(page_number + 1))
         contents = contents.replace("(STYLESHEET)", stylesheet)
         if category != "":
