@@ -85,8 +85,10 @@ Keywords that may be entered in this file's \<body\> are:
 * (POST) - Gets replaced with a single post.
 * (NAVIGATION) - Gets replaced with navigation links for moving between pages (See section [Navigation template](#navigation-template)).
 * (NUMBER) - Gets replaced with the current page number.
-* (CATEGORY) - On pages that only display posts of a specific category this will be replaced with the name of the category. For pages that are not of a specific category (i.e. the main pages of the site that contain all posts), (CATEGORY) will be replaced with "All Posts".
+* (LABEL) - On pages that only display posts of a specific category this will be replaced with the name of the category. On pages that only display posts from a specific date, this will be replaced with the name of the month and its year. For pages that are not of a specific category (i.e. the main pages of the site that contain all posts), (CATEGORY) will be replaced with "All Posts".
 * (CATEGORY_LINKS) - This will be replaced with an unordered list of links to all category pages. A link to the first page of the site--"index.html"--will also be displayed as "All Posts". It is recommended to put this keyword within a \<div\> and style it with CSS.
+* (DATE_LINKS) - Similar to (CATEGORY_LINKS). This keyword will be replaced with an unordered list of links to all "date pages". These are pages that only contain posts from a certain month (i.e. Jan 2026). This feature can be used to create an "archive" section on a website, with links to all past posts.
+
 * (STYLESHEET) - Gets replaced with the absolute path of the style sheet specified in the configuration file (see section [The configuration file](#the-configuration-file)). Therefore it should be placed within an HTML tag, like: \<link rel="stylesheet" href="(STYLESHEET)"\>. This keyword is optional; however, if subdirectories are used (see #), then it is required in order for style sheets to work.
 
 All keywords are optional; however, omitting (POST) entirely will result in no posts being displayed on the generated site.

@@ -210,55 +210,53 @@ for file in source_files:
     post_objects.append(obj)
     data.clear()
 
-### Sort post_objects. (Default: By date, newest to oldest. With command line options, it is also possible to sort by filename (-f), title (-t), or meatadata number (-n). These will also be sorted from highest to lowest. To sort from oldest to newest / lowest to highest, use the command line option (-r).
-
+# Create datetime object for every object in post_objects. Save to obj.date_dt
+# This is later used for sorting by date (if the user chooses to sort by date)
 def default_date(obj):
     print("Could not extract date. Defaulting to 01/01/00 for " + obj.filename + "'s date. No date will be displayed for this post on the generated website.")
     obj.date = ""
     obj.date_dt = datetime.datetime.strptime("01/01/00", '%m/%d/%y')
 
+for obj in post_objects:
+    # If an hour was given for DATE=
+    if len(obj.date) == 2:
+        obj.fix_year()
+        try:
+            obj.date_dt = datetime.datetime.strptime(" ".join(obj.date), '%m/%d/%y %H:%M')
+        except:
+            default_date(obj)
+    # If no hour was given
+    elif len(obj.date) == 1:
+        obj.fix_year()
+        try:
+            obj.date_dt = datetime.datetime.strptime(obj.date[0], '%m/%d/%y')
+        except:
+            default_date(obj)
+    # If no date was given, default to 01/01/2000 for sorting purposes. (That default date will not display on the generated website.)
+    elif obj.date == "":
+        obj.date_dt = datetime.datetime.strptime("01/01/00", '%m/%d/%y')
+    # If the date was formatted incorrectly (more than two arguments, so likely not just MM/DD/YY and Hour:Minute), try to extract the proper date.
+    else:
+        print("DATE value in source file '" + obj.filename + "' is written incorrectly. Please ensure that it is written in MM/DD/YY format or MM/DD/YY Hour:Minute (24hr) format.")
+        obj.date = obj.date[:2]
+        obj.fix_year()
+        try:
+            obj.date_dt = datetime.datetime.strptime(" ".join(obj.date), '%m/%d/%y %H:%M')
+        except:
+            default_date(obj)
+        else:
+            print("Attempted to extract date regardless. Date for " + obj.filename + " may display incorrectly.")
+    obj.month_year = obj.date_dt.strftime('%b %Y')
+
+### Sort post_objects. (Default: By date, newest to oldest. With command line options, it is also possible to sort by filename (-f), title (-t), or meatadata number (-n). These will also be sorted from highest to lowest. To sort from oldest to newest / lowest to highest, use the command line option (-r).
 if file_mode:
     post_objects.sort(key=attrgetter("filename"), reverse=reverse_mode)
 elif number_mode:
     post_objects.sort(key=attrgetter("meta_number"), reverse=reverse_mode)
 elif title_mode:
     post_objects.sort(key=attrgetter("title"), reverse=reverse_mode)
-# Converts date to datetime object for sorting by date. These are then deleted.
-# Possible performance issues caused by creating date objects inside the sort() method, so this was avoided to be safe: https://stackoverflow.com/questions/10123953/how-to-sort-an-object-array-by-date-property#comment100564234_10124053
 else:
-    for obj in post_objects:
-        # If an hour was given for DATE=
-        if len(obj.date) == 2:
-            obj.fix_year()
-            try:
-                obj.date_dt = datetime.datetime.strptime(" ".join(obj.date), '%m/%d/%y %H:%M')
-            except:
-                default_date(obj)
-        # If no hour was given
-        elif len(obj.date) == 1:
-            obj.fix_year()
-            try:
-                obj.date_dt = datetime.datetime.strptime(obj.date[0], '%m/%d/%y')
-            except:
-                default_date(obj)
-        # If no date was given, default to 01/01/2000 for sorting purposes. (That default date will not display on the generated website.)
-        elif obj.date == "":
-            obj.date_dt = datetime.datetime.strptime("01/01/00", '%m/%d/%y')
-        # If the date was formatted incorrectly (more than two arguments, so likely not just MM/DD/YY and Hour:Minute), try to extract the proper date.
-        else:
-            print("DATE value in source file '" + obj.filename + "' is written incorrectly. Please ensure that it is written in MM/DD/YY format or MM/DD/YY Hour:Minute (24hr) format.")
-            obj.date = obj.date[:2]
-            obj.fix_year()
-            try:
-                obj.date_dt = datetime.datetime.strptime(" ".join(obj.date), '%m/%d/%y %H:%M')
-            except:
-                default_date(obj)
-            else:
-                print("Attempted to extract date regardless. Date for " + obj.filename + " may display incorrectly.")
-
     post_objects.sort(key=attrgetter("date_dt"), reverse=reverse_mode)
-    for obj in post_objects:
-        del obj.date_dt
 
 ### Assign post numbers to all objects (numbers reflect the actual order of posts in the list post_objects. 
 # This is different from meta_number, which corresponds with the optional "NUMBER=" field in source files. meta_number is used to facilitate sorting by number with -n. If the user does not sort by -n, then meta_number may not represent the actual position of an object in post_objects.)
@@ -460,6 +458,7 @@ def insert_posts(first_page_filename, subsequent_page_filename, subdir, formatte
 # Categorical lists of formatted posts are contained within the dictionary category_formatted_posts
 all_formatted_posts = list()
 category_formatted_posts = dict()
+date_formatted_posts = dict()
 for obj in post_objects:
     formatted_post = format_post(obj)
     all_formatted_posts.append(formatted_post)
@@ -469,6 +468,11 @@ for obj in post_objects:
         except:
             category_formatted_posts[category] = list()
             category_formatted_posts[category].append(formatted_post)
+    try:
+        date_formatted_posts[obj.month_year].append(formatted_post)
+    except:
+        date_formatted_posts[obj.month_year] = list()
+        date_formatted_posts[obj.month_year].append(formatted_post)
 
 ### Remove any .html files that are currently in the output directory and its subdirectories that were not created during this run of the script. 
 ### This is to provide "overwrite" functionality.
@@ -486,20 +490,25 @@ for dirpath, dirnames, filenames in os.walk(output_dir):
 ### Call insert_posts to generate .html pages in output_dir for every post. Save list of paths of generated pages.
 # Generate main pages (contain all posts)
 main_pages = insert_posts("index", "page", "", all_formatted_posts)
-# Generate categorial pages.
-category_pages = dict()
-category_links = dict()
-for category in category_formatted_posts:
-    if no_subdirs:
-        category_name = category
-    else:
-        category_name = "index"
-    try:
-        category_pages[category] += insert_posts(category_name, category, category, category_formatted_posts[category])
-    except:
-        category_pages[category] = insert_posts(category_name, category, category, category_formatted_posts[category])
-        # Add the first page of every category to dictionary category_links
-        category_links[category] = category_pages[category][0]
+
+# Generate categorial pages and date pages.
+def insert_posts_from_dict(dictionary):
+    pages_dict = dict()
+    links_dict = dict()
+    for key in dictionary:
+        if no_subdirs:
+            first_page_name = key
+        else:
+            first_page_name = "index"
+        try:
+            pages_dict[key] += insert_posts(first_page_name, key, key, dictionary[key])
+        except:
+            pages_dict[key] = insert_posts(first_page_name, key, key, dictionary[key])
+            links_dict[key] = pages_dict[key][0]
+    return pages_dict, links_dict
+
+category_pages, category_links = insert_posts_from_dict(category_formatted_posts)
+date_pages, date_links = insert_posts_from_dict(date_formatted_posts)
 
 ### Format the navigation_template
 # Parse the navigation_template
@@ -561,7 +570,15 @@ def format_navigation(page_list, page_numbers, page_number, nav_string, nav_dict
 # Replace (STYLESHEET) in the page_template with the absolute path of the style sheet that was specified in the config file
 # Replace (CATEGORY) with the current page's category if applicable. Otherwise replace it with "All Posts".
 # Replace (CATEGORY_LINKS) with links to all of the first pages of each category.
-def final_process_pages(page_list, category, category_links, main_pages):
+# Replace (DATE_LINKS) in a similar way to (CATEGORY_LINKS), except the pages represent months rather than categories 
+def format_links(links_dict, beginning_link):
+    links = beginning_link
+    for key in links_dict:
+        links = links + '<li><a href="' + links_dict[key] + '">' + key + '</a></li>'
+        if key == list(links_dict.keys())[-1]:
+            return (links + "</ul>")
+
+def final_process_pages(page_list, label, category_links, date_links,  main_pages):
     page_numbers = range(len(page_list))
     for page_number in page_numbers:
         with open(page_list[page_number], "r") as f:
@@ -569,19 +586,19 @@ def final_process_pages(page_list, category, category_links, main_pages):
         contents = contents.replace("(NAVIGATION)", format_navigation(page_list, page_numbers, page_number, navigation, nav_dict))
         contents = contents.replace("(NUMBER)", str(page_number + 1))
         contents = contents.replace("(STYLESHEET)", stylesheet)
-        if category != "":
-            contents = contents.replace("(CATEGORY)", category)
+        if label != "":
+            contents = contents.replace("(LABEL)", label)
         else:
-            contents = contents.replace("(CATEGORY)", "All Posts")
-        links = '<ul><li><a href="' + main_pages[0] + '">All Posts</a></li>'
-        for category in category_links:
-            links = links + '<li><a href="' + category_links[category] + '">' + category + '</a></li>'
-            if category == list(category_links.keys())[-1]:
-                contents = contents.replace("(CATEGORY_LINKS)", links + "</ul>")
+            contents = contents.replace("(LABEL)", "All Posts")
+        beginning_link = '<ul><li><a href="' + main_pages[0] + '">All Posts</a></li>'
+        contents = contents.replace("(CATEGORY_LINKS)", format_links(category_links, beginning_link))
+        contents = contents.replace("(DATE_LINKS)", format_links(date_links, ""))
         with open(page_list[page_number], "w") as f:
             f.write(contents)
 
 # Insert navigation template and page numbers for list "main_pages"
-final_process_pages(main_pages, "", category_links, main_pages)
+final_process_pages(main_pages, "", category_links, date_links, main_pages)
 for category in category_pages:
-    final_process_pages(category_pages[category], category, category_links, main_pages)
+    final_process_pages(category_pages[category], category, category_links, date_links, main_pages)
+for date in date_pages:
+    final_process_pages(date_pages[date], date, category_links, date_links, main_pages)
