@@ -59,7 +59,7 @@ This must be placed on its own line. The path to the image should be written rel
 
 An optional 2nd argument can be given to IMAGE in order to give the generated \<img\> element an HTML id. Simply write the name of the value that you would like to be inserted in the id="" of the \<img\> element. This is useful for situations where you may want to select a specific image with CSS.
 
-**Note:** The path that will be used for images in the final outputted page is an absolute path. If you are on a personal computer, this path may contain your name or other personal information.
+**Note:** The path that will be used for images in the final outputted page is a relative path. If you would like to use an absolute path instead, use the [-a command line option](#use-absolute-paths-for-images).
 
 **Tip:** In order to have the image size correctly, select the \<img\> tag with CSS and use "width: 70%;" or another preferred number. For a webcomic, you may want to use "width: 100%;". In order to center the image, include in the CSS: "display: block;" and "margin: auto;"
 
@@ -93,7 +93,7 @@ Keywords that may be entered in this file's \<body\> are:
 
 All keywords are optional; however, omitting (POST) entirely will result in no posts being displayed on the generated site.
 
-**Note:** The path that (STYLESHEET) will be replaced with in the final outputted page is an absolute path. If you are on a personal computer, this path may contain your name or other personal information. If you would like to avoid this, use the [--no-subdirs option](#disable-subdirectories-in-output-directory) when running the script and manually specify the style sheet's location in the page template.
+**Note:** The path that (STYLESHEET) will be replaced with in the final outputted page is a relative path. If you would like to use an absolute path instead, use the [-a command line option](#use-absolute-paths-for-images).
 
 **Tip:** For classic style webcomic sites, configure the page template to only display one post per page. This is done by writing only one (POST) on the page template.
 
@@ -245,6 +245,21 @@ python3 generator.py --output="path/to/output/directory"
 ### Specify configuration file
 
 See above: [-c for manually specifying the path to a configuration file](#manually-specifying-the-path-to-a-configuration-file)
+
+### Use absolute paths for stylesheet and images
+
+By default, the script will use relative paths in the outputted files for [images (specified in the source files)](#images) and [the stylesheet (specified in the configuration file)](#page-template). To use absolute paths instead, use the command line option:
+
+```
+python3 generator.py -a
+python3 generator.py --absolute-paths
+```
+#### Pros and cons
+**Relative paths:** This option is useful for situations where the generator script is run on a computer that will *not* host the outputted files (e.g. running the script on a personal computer, then uploading the outputted files to a remote server. Using absolute paths in such a situation would not work). This is why the command line option is titled "-x", a mnemonic for "extract". The downside to using relative paths is that the directory structure must remain consistent in order for the paths to work. This shouldn't be a problem for users who keep all of their website related documents (images, stylesheets, outputted files) in one location and simply push or drag and drop everything to a server.
+
+**Absolute paths:** The benefit is that the directory structure may be changed without breaking paths. However, the downside is that the site is not "portable" and cannot be easily uploaded from a PC to a server. Also, absolute paths may expose unwanted details, such as the name of your home directory.
+
+**The bottom line:** If you will be generating and hosting a website on the same device (e.g. running the Python script from the shell of a web server), then it is possible to use absolute paths, and there may be some benefits in that. However, for most users, this will not be the case, and relative paths should be used.
 
 ### Disable subdirectories in output directory
 
