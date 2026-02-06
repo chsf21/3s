@@ -157,7 +157,6 @@ for rootdir, dirnames, filenames in os.walk(source_dir, topdown=True, followlink
         if not file.endswith('.txt') or not file.endswith('') or file.startswith('.'):
             continue
         file_path = os.path.join(rootdir, file)
-        print(file_path)
         source_files.append(file_path)
 
 # Function for pulling metadata out of a source file and saving it to a dict
@@ -333,13 +332,22 @@ def handle_code(string_as_list, index, code_encountered_flag):
 ### Returns the formatted post as a string
 # page_dir represents the directory where the HTML page that this formatted post will be inserted into will eventually reside.
 def format_post(obj, page_dir):
-    final_location = output_dir + "/" + page_dir
+    final_location = output_dir + page_dir
+
     with open(post_template, "r") as f:
         temp = f.read()
         temp = temp.replace("(NUMBER)", obj.number)
         temp = temp.replace("(TITLE)", obj.title)
         temp = temp.replace("(DATE)", " ".join(obj.date))
-        temp = temp.replace("(CATEGORIES)", ", ".join(obj.categories))
+
+        categories_hypertext = list()
+        if no_subdirs:
+            for category in obj.categories:
+                categories_hypertext.append('<a href="' + category + '.html">' + category + '</a>')
+        else:
+            for category in obj.categories:
+                categories_hypertext.append('<a href="' + os.path.relpath(output_dir, final_location) + "/" + category + '/index.html">' + category + '</a>')
+        temp = temp.replace("(CATEGORIES)", ", ".join(categories_hypertext))
         temp_body = obj.body
     # Process formatting within the body of the source file
     italics_encountered = False
