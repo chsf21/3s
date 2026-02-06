@@ -58,7 +58,7 @@ for option, value in arguments:
         print("-r, --reversed\tSort posts in reverse order, from lowest to highest / oldest to newest.")
         print("-c 'path/to/config', --config='path/to/config'\tManually specify the configuration file to be used for this run of the script.")
         print("-o 'path/to/output/directory', --output='path/to/output/directory'\tManually specify the output directory (Avoid overwriting the contents of the default output directory specified in the configuration file)")
-        print("-a, --absolute-paths\tUse absolute paths for <img> src and stylesheet rather than relative paths.")
+        print("-a, --absolute-paths\tUse absolute paths (e.g. for <img> src and stylesheet paths) rather than relative paths.")
         print("--no-subdirs\tDo not create subdirectories in the output directory for each category. All .html files, including categorical pages, are outputted to the root of the output directory.")
         print("\nFor more information and a user guide, see README.md\nAvailable online at: https://github.com/chsf21/3s/")
         sys.exit(0)
@@ -333,7 +333,6 @@ def handle_code(string_as_list, index, code_encountered_flag):
 # page_dir represents the directory where the HTML page that this formatted post will be inserted into will eventually reside.
 def format_post(obj, page_dir):
     final_location = output_dir + page_dir
-
     with open(post_template, "r") as f:
         temp = f.read()
         temp = temp.replace("(NUMBER)", obj.number)
@@ -346,7 +345,10 @@ def format_post(obj, page_dir):
                 categories_hypertext.append('<a href="' + category + '.html">' + category + '</a>')
         else:
             for category in obj.categories:
-                categories_hypertext.append('<a href="' + os.path.relpath(output_dir, final_location) + "/" + category + '/index.html">' + category + '</a>')
+                if not absolute_paths:
+                    categories_hypertext.append('<a href="' + os.path.relpath(output_dir, final_location) + "/" + category + '/index.html">' + category + '</a>')
+                else:
+                    categories_hypertext.append('<a href="' + output_dir + category + '/index.html">' + category + '</a>')
         temp = temp.replace("(CATEGORIES)", ", ".join(categories_hypertext))
         temp_body = obj.body
     # Process formatting within the body of the source file
