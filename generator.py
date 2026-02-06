@@ -337,7 +337,19 @@ def format_post(obj, page_dir):
         temp = f.read()
         temp = temp.replace("(NUMBER)", obj.number)
         temp = temp.replace("(TITLE)", obj.title)
-        temp = temp.replace("(DATE)", " ".join(obj.date))
+
+        date_text = " ".join(obj.date)
+        if hasattr(obj, "month_year"):
+            month_year_underscore = obj.month_year.replace(" ", "_")
+            if no_subdirs:
+                date_hypertext = '<a href="' + month_year_underscore + '.html">' + date_text + '</a>'
+            elif not no_subdirs and not absolute_paths:
+                date_hypertext = '<a href="' + os.path.relpath(output_dir, final_location) + "/" + month_year_underscore + '/index.html">' + date_text + '</a>'
+            else:
+                date_hypertext = '<a href="' + output_dir + month_year_underscore + '/index.html">' + category + '</a>'
+            temp = temp.replace("(DATE)", date_hypertext)
+        else:
+            temp = temp.replace("(DATE)", date_text)
 
         categories_hypertext = list()
         if no_subdirs:
