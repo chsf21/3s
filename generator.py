@@ -11,8 +11,8 @@ from operator import attrgetter
 
 ### Handle command line options/arguments
 args = sys.argv[1:]
-short_options = "htnfrc:o:"
-long_options = ["help", "sort-by-title", "sort-by-number", "sort-by-filename", "reversed", "config=", "output=", "no-subdirs"]
+short_options = "htnfrc:o:a"
+long_options = ["help", "sort-by-title", "sort-by-number", "sort-by-filename", "reversed", "config=", "output=", "--absolute-paths", "no-subdirs"]
 try:
     arguments, trailing = getopt.getopt(args, short_options, long_options)
 except getopt.GetoptError as err:
@@ -32,10 +32,13 @@ file_mode = False
 number_mode = False
 title_mode = False
 custom_output = False
+absolute_paths = False
 no_subdirs = False
 for option, value in arguments:
     if option in ("-c", "--config"):
         config = os.path.expanduser(value)
+    elif option in ("-a", "--absolute-paths"):
+        absolute_paths = True
     elif option in ("-o", "--output"):
         custom_output = True
         try:
@@ -55,6 +58,7 @@ for option, value in arguments:
         print("-r, --reversed\tSort posts in reverse order, from lowest to highest / oldest to newest.")
         print("-c 'path/to/config', --config='path/to/config'\tManually specify the configuration file to be used for this run of the script.")
         print("-o 'path/to/output/directory', --output='path/to/output/directory'\tManually specify the output directory (Avoid overwriting the contents of the default output directory specified in the configuration file)")
+        print("-a, --absolute-paths\tUse absolute paths for <img> src and stylesheet rather than relative paths.")
         print("--no-subdirs\tDo not create subdirectories in the output directory for each category. All .html files, including categorical pages, are outputted to the root of the output directory.")
         print("\nFor more information and a user guide, see README.md\nAvailable online at: https://github.com/chsf21/3s/")
         sys.exit(0)
@@ -153,6 +157,7 @@ for rootdir, dirnames, filenames in os.walk(source_dir, topdown=True, followlink
         if not file.endswith('.txt') or not file.endswith('') or file.startswith('.'):
             continue
         file_path = os.path.join(rootdir, file)
+        print(file_path)
         source_files.append(file_path)
 
 # Function for pulling metadata out of a source file and saving it to a dict
@@ -326,7 +331,9 @@ def handle_code(string_as_list, index, code_encountered_flag):
 
 ### Function for finding and replacing tags in post_template with post object properties. Also formats content within the body of the source file.
 ### Returns the formatted post as a string
-def format_post(obj):
+# page_dir represents the directory where the HTML page that this formatted post will be inserted into will eventually reside.
+def format_post(obj, page_dir):
+    final_location = output_dir + "/" + page_dir
     with open(post_template, "r") as f:
         temp = f.read()
         temp = temp.replace("(NUMBER)", obj.number)
@@ -359,8 +366,12 @@ def format_post(obj):
             # If an image's path is given as a relative path, expand it relative to the location of the source file.
             if image_args[1].startswith("/") or image_args[1].startswith("~"):
                 img_path = os.path.expanduser(image_args[1])
+                img_path = os.path.abspath(img_path)
             else:
                 img_path = os.path.dirname(obj.path) + "/" + image_args[1]
+
+            if not absolute_paths:
+                img_path = os.path.relpath(img_path, final_location)
             
             if len(image_args) == 3:
                 img_line = f"</p><img src=\"{img_path}\" id=\"{image_args[2]}\"><p>"
@@ -464,19 +475,27 @@ def insert_posts(first_page_filename, subsequent_page_filename, subdir, formatte
 # All formatted posts are appended to the list all_formatted_posts
 # Formatted posts with categories are appended to a list of formatted posts for that specific category.
 # Categorical lists of formatted posts are contained within the dictionary category_formatted_posts
+# If subdirectories will be used, we can make assumptions about where the final generated pages will be located (page_dir), as subdirectories only go one level deep and are named after the category or date.
 all_formatted_posts = list()
 category_formatted_posts = dict()
 date_formatted_posts = dict()
 for obj in post_objects:
-    formatted_post = format_post(obj)
+    page_dir = ""
+    formatted_post = format_post(obj, page_dir)
     all_formatted_posts.append(formatted_post)
     for category in obj.categories:
+        if not no_subdirs:
+            page_dir = category
+            formatted_post = format_post(obj, page_dir)
         try:
             category_formatted_posts[category].append(formatted_post)
         except:
             category_formatted_posts[category] = list()
             category_formatted_posts[category].append(formatted_post)
     if hasattr(obj, "month_year"):
+        if not no_subdirs:
+            page_dir = obj.month_year
+            formatted_post = format_post(obj, page_dir)
         try:
             date_formatted_posts[obj.month_year].append(formatted_post)
         except:
@@ -588,27 +607,35 @@ def format_links(links_dict, beginning_link):
         if key == list(links_dict.keys())[-1]:
             return (links + "</ul>")
 
-def final_process_pages(page_list, label, category_links, date_links,  main_pages):
+def final_process_pages(page_list, subdir, label, category_links, date_links,  main_pages, stylesheet):
     page_numbers = range(len(page_list))
     for page_number in page_numbers:
         with open(page_list[page_number], "r") as f:
             contents = f.read()
+
         contents = contents.replace("(NAVIGATION)", format_navigation(page_list, page_numbers, page_number, navigation, nav_dict))
         contents = contents.replace("(NUMBER)", str(page_number + 1))
+
+        if no_subdirs:
+            subdir = ""
+        if not absolute_paths:
+            stylesheet = os.path.relpath(stylesheet, output_dir + subdir)
         contents = contents.replace("(STYLESHEET)", stylesheet)
+
         if label != "":
             contents = contents.replace("(LABEL)", label)
         else:
             contents = contents.replace("(LABEL)", "All Posts")
+
         beginning_link = '<li><a href="' + main_pages[0] + '">All Posts</a></li>'
         contents = contents.replace("(CATEGORY_LINKS)", format_links(category_links, beginning_link))
         contents = contents.replace("(DATE_LINKS)", format_links(date_links, ""))
+
         with open(page_list[page_number], "w") as f:
             f.write(contents)
 
-# Insert navigation template and page numbers for list "main_pages"
-final_process_pages(main_pages, "", category_links, date_links, main_pages)
+final_process_pages(main_pages, "", "", category_links, date_links, main_pages, stylesheet)
 for category in category_pages:
-    final_process_pages(category_pages[category], category, category_links, date_links, main_pages)
+    final_process_pages(category_pages[category], category.replace(" ", "_"), category, category_links, date_links, main_pages, stylesheet)
 for date in date_pages:
-    final_process_pages(date_pages[date], date, category_links, date_links, main_pages)
+    final_process_pages(date_pages[date], date.replace(" ", "_"), date, category_links, date_links, main_pages, stylesheet)
