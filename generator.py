@@ -619,17 +619,16 @@ def format_links(links_dict, beginning_link):
 
 def final_process_pages(page_list, subdir, label, category_links, date_links,  main_pages, stylesheet):
     page_numbers = range(len(page_list))
+    if no_subdirs:
+        subdir = ""
+    if not absolute_paths:
+        stylesheet = os.path.relpath(stylesheet, output_dir + subdir)
     for page_number in page_numbers:
         with open(page_list[page_number], "r") as f:
             contents = f.read()
 
         contents = contents.replace("(NAVIGATION)", format_navigation(page_list, page_numbers, page_number, navigation, nav_dict))
         contents = contents.replace("(NUMBER)", str(page_number + 1))
-
-        if no_subdirs:
-            subdir = ""
-        if not absolute_paths:
-            stylesheet = os.path.relpath(stylesheet, output_dir + subdir)
         contents = contents.replace("(STYLESHEET)", stylesheet)
 
         if label != "":
