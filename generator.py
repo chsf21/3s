@@ -12,7 +12,7 @@ from operator import attrgetter
 ### Handle command line options/arguments
 args = sys.argv[1:]
 short_options = "htnfrc:o:a"
-long_options = ["help", "sort-by-title", "sort-by-number", "sort-by-filename", "reversed", "config=", "output=", "--absolute-paths", "no-subdirs", "no-date-hypertext"]
+long_options = ["help", "sort-by-title", "sort-by-number", "sort-by-filename", "reversed", "config=", "output=", "--absolute-paths", "no-subdirs", "no-date-hypertext", "no-title-hypertext"]
 try:
     arguments, trailing = getopt.getopt(args, short_options, long_options)
 except getopt.GetoptError as err:
@@ -35,6 +35,7 @@ custom_output = False
 absolute_paths = False
 no_subdirs = False
 no_date_hypertext = False
+no_title_hypertext = False
 for option, value in arguments:
     if option in ("-c", "--config"):
         config = os.path.expanduser(value)
@@ -62,6 +63,7 @@ for option, value in arguments:
         print("-a, --absolute-paths\tUse absolute paths (e.g. for <img> src and stylesheet paths) rather than relative paths.")
         print("--no-subdirs\tDo not create subdirectories in the output directory for each category. All .html files, including categorical pages, are outputted to the root of the output directory.")
         print("--no-date-hypertext\tDate text (specified in the post template with '(DATE)') will not be hypertext/clickable.")
+        print("--no-title-hypertext\tTitle text (specified in the post template with '(TITLE)') will not be hypertext/clickable.")
         print("\nFor more information and a user guide, see README.md\nAvailable online at: https://github.com/chsf21/3s/")
         sys.exit(0)
     elif option in ("-t", "--sort-by-title"):
@@ -79,6 +81,8 @@ for option, value in arguments:
         no_subdirs = True
     elif option in ("--no-date-hypertext"):
         no_date_hypertext = True
+    elif option in ("--no-title-hypertext"):
+        no_title_hypertext = True
 
 config = os.path.abspath(config)
 
@@ -340,7 +344,11 @@ def format_post(obj, page_dir):
     with open(post_template, "r") as f:
         temp = f.read()
         temp = temp.replace("(NUMBER)", obj.number)
-        temp = temp.replace("(TITLE)", obj.title)
+        
+        if no_title_hypertext:
+            temp = temp.replace("(TITLE)", obj.title)
+        else:
+            temp = temp.replace("(TITLE)", ('<a href="#' + obj.number + '">' + obj.title + '</a>'))
 
         date_text = " ".join(obj.date)
         if hasattr(obj, "month_year") and not no_date_hypertext:

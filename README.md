@@ -103,8 +103,8 @@ This is what (POST) on the page template will be replaced with. For this reason,
 Keywords that may be entered in this file are:
 
 * (NUMBER) - Replaced with the post number. By default, the first post displayed on the site is treated as the final post and assigned the highest post number (unless the reverse option -r is used. See section [The Python script](#the-python-script-command-line-options) below.) (Note that this is not necessarily the same number as the metadata number mentioned above. Also see section [The Python script](#the-python-script-command-line-options).)
-* (TITLE) - The title that was assigned to a post in its source file
-* (DATE) - The date that was assigned to a post in its source file
+* (TITLE) - The title that was assigned to a post in its source file. By default will be replaced with hypertext linking to the current post. In order for this hypertext to work, place id="(NUMBER)" in the post template's main \<div\>. For more details see section [Disable title hypertext](#disable-title-hypertext).
+* (DATE) - The date that was assigned to a post in its source file. By default will be replaced with hypertext. For more details see section [Disable date hypertext](#disable-date-hypertext).
 * (CATEGORIES) - The categories that were assigned to a post in its source file
 * (BODY) - The post's body.
 
@@ -272,7 +272,21 @@ python3 generator.py --no-subdirs
 
 ### Disable date hypertext
 
-By default date text within a post (represented by '(DATE)' in the [post template](#post-template)) will be hypertext. A post's date hypertext links to the section of the site containing all posts from the month in which the post was made. This behavior can be disabled--and (DATE) will be substituted with plaintext--by using the command line option:
+By default date text within a post (represented by '(DATE)' in the [post template](#post-template)) will be hypertext. This hypertext links to the section of the site containing all posts from the month in which the post was made. This behavior can be disabled--and (DATE) will be substituted with plaintext--by using the command line option:
 ```
 python3 generator.py --no-date-hypertext
+```
+
+### Disable title hypertext
+
+By default title text within a post (represented by '(TITLE)' in the [post template](#post-template)) will be hypertext. This hypertext aims to provide a link to the post by linking to the HTML element with the ID equal to the post's number (which is represent by (NUMBER) in the post template). Therefore, in order for title hypertext to work properly the post template must contain a \<div\> like the following:
+```
+<div id=(NUMBER)>
+...
+</div>
+```
+
+Title hypertext can be disabled and substituted with plaintext by using the command line option:
+```
+python3 generator.py --no-title-hypertext
 ```
