@@ -89,7 +89,7 @@ Keywords that may be entered in this file's \<body\> are:
 * (CATEGORY_LINKS) - This will be replaced with an unordered list of links to all category pages. A link to the first page of the site--"index.html"--will also be displayed as "All Posts". It is recommended to put this keyword within a \<div\> and style it with CSS.
 * (DATE_LINKS) - Similar to (CATEGORY_LINKS). This keyword will be replaced with an unordered list of links to all "date pages". These are pages that only contain posts from a certain month (i.e. Jan 2026). This feature can be used to create an "archive" section on a website, with links to all past posts.
 
-* (STYLESHEET) - Gets replaced with the absolute path of the style sheet specified in the configuration file (see section [The configuration file](#the-configuration-file)). Therefore it should be placed within an HTML tag, like: \<link rel="stylesheet" href="(STYLESHEET)"\>. This keyword is optional; however, if subdirectories are used (see #), then it is required in order for style sheets to work.
+* (STYLESHEET) - Gets replaced with the relative path of the style sheet specified in the configuration file (see section [The configuration file](#the-configuration-file)). Therefore it should be placed within an HTML tag, like: \<link rel="stylesheet" href="(STYLESHEET)"\>. This keyword is optional; however, if subdirectories are used (see #), then it is required in order for style sheets to work.
 
 All keywords are optional; however, omitting (POST) entirely will result in no posts being displayed on the generated site.
 
@@ -248,7 +248,7 @@ See above: [-c for manually specifying the path to a configuration file](#manual
 
 ### Use absolute paths for stylesheet and images
 
-By default, the script will use relative paths in the outputted files for [images (specified in the source files)](#images) and [the stylesheet (specified in the configuration file)](#page-template). To use absolute paths instead, use the command line option:
+By default, the script will use relative paths in the outputted files (e.g. for [images (specified in the source files)](#images) and [the stylesheet (specified in the configuration file)](#page-template)). To use absolute paths instead, use the command line option:
 
 ```
 python3 generator.py -a
@@ -270,3 +270,9 @@ Categorical posts can be outputted to the root of the output directory instead o
 python3 generator.py --no-subdirs
 ```
 
+### Disable date hypertext
+
+By default date text within a post (represented by '(DATE)' in the [post template](#post-template)) will be hypertext. A post's date hypertext links to the section of the site containing all posts from the month in which the post was made. This behavior can be disabled--and (DATE) will be substituted with plaintext--by using the command line option:
+```
+python3 generator.py --no-date-hypertext
+```

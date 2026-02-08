@@ -12,7 +12,7 @@ from operator import attrgetter
 ### Handle command line options/arguments
 args = sys.argv[1:]
 short_options = "htnfrc:o:a"
-long_options = ["help", "sort-by-title", "sort-by-number", "sort-by-filename", "reversed", "config=", "output=", "--absolute-paths", "no-subdirs"]
+long_options = ["help", "sort-by-title", "sort-by-number", "sort-by-filename", "reversed", "config=", "output=", "--absolute-paths", "no-subdirs", "no-date-hypertext"]
 try:
     arguments, trailing = getopt.getopt(args, short_options, long_options)
 except getopt.GetoptError as err:
@@ -34,6 +34,7 @@ title_mode = False
 custom_output = False
 absolute_paths = False
 no_subdirs = False
+no_date_hypertext = False
 for option, value in arguments:
     if option in ("-c", "--config"):
         config = os.path.expanduser(value)
@@ -60,6 +61,7 @@ for option, value in arguments:
         print("-o 'path/to/output/directory', --output='path/to/output/directory'\tManually specify the output directory (Avoid overwriting the contents of the default output directory specified in the configuration file)")
         print("-a, --absolute-paths\tUse absolute paths (e.g. for <img> src and stylesheet paths) rather than relative paths.")
         print("--no-subdirs\tDo not create subdirectories in the output directory for each category. All .html files, including categorical pages, are outputted to the root of the output directory.")
+        print("--no-date-hypertext\tDate text (specified in the post template with '(DATE)') will not be hypertext/clickable.")
         print("\nFor more information and a user guide, see README.md\nAvailable online at: https://github.com/chsf21/3s/")
         sys.exit(0)
     elif option in ("-t", "--sort-by-title"):
@@ -75,6 +77,8 @@ for option, value in arguments:
         file_mode = True
     elif option in ("--no-subdirs"):
         no_subdirs = True
+    elif option in ("--no-date-hypertext"):
+        no_date_hypertext = True
 
 config = os.path.abspath(config)
 
@@ -339,7 +343,7 @@ def format_post(obj, page_dir):
         temp = temp.replace("(TITLE)", obj.title)
 
         date_text = " ".join(obj.date)
-        if hasattr(obj, "month_year"):
+        if hasattr(obj, "month_year") and not no_date_hypertext:
             month_year_underscore = obj.month_year.replace(" ", "_")
             if no_subdirs:
                 date_hypertext = '<a href="' + month_year_underscore + '.html">' + date_text + '</a>'
