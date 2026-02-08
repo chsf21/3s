@@ -12,7 +12,7 @@ from operator import attrgetter
 ### Handle command line options/arguments
 args = sys.argv[1:]
 short_options = "htnfrc:o:a"
-long_options = ["help", "sort-by-title", "sort-by-number", "sort-by-filename", "reversed", "config=", "output=", "--absolute-paths", "no-subdirs", "no-date-hypertext", "no-title-hypertext"]
+long_options = ["help", "sort-by-title", "sort-by-number", "sort-by-filename", "reversed", "config=", "output=", "absolute-paths", "no-subdirs", "no-date-hypertext", "no-title-hypertext"]
 try:
     arguments, trailing = getopt.getopt(args, short_options, long_options)
 except getopt.GetoptError as err:
@@ -353,12 +353,14 @@ def format_post(obj, page_dir):
         date_text = " ".join(obj.date)
         if hasattr(obj, "month_year") and not no_date_hypertext:
             month_year_underscore = obj.month_year.replace(" ", "_")
-            if no_subdirs:
+            if no_subdirs and not absolute_paths:
                 date_hypertext = '<a href="' + month_year_underscore + '.html">' + date_text + '</a>'
+            elif no_subdirs and absolute_paths:
+                date_hypertext = '<a href="' + output_dir + month_year_underscore + '.html">' + date_text + '</a>'
             elif not no_subdirs and not absolute_paths:
                 date_hypertext = '<a href="' + os.path.relpath(output_dir, final_location) + "/" + month_year_underscore + '/index.html">' + date_text + '</a>'
             else:
-                date_hypertext = '<a href="' + output_dir + month_year_underscore + '/index.html">' + category + '</a>'
+                date_hypertext = '<a href="' + output_dir + month_year_underscore + '/index.html">' + date_text + '</a>'
             temp = temp.replace("(DATE)", date_hypertext)
         else:
             temp = temp.replace("(DATE)", date_text)
@@ -615,14 +617,26 @@ def format_navigation(page_list, page_numbers, page_number, nav_string, nav_dict
 
     # Replace keywords in navigation_template with appropriate values
     if not first_page:
-        new_previous = nav_dict["previous"].replace("(PREVIOUS)", os.path.basename(page_list[page_number - 1]))
+        if absolute_paths:
+            previous_page = page_list[page_number - 1]
+            first_page = page_list[0]
+        else:
+            previous_page = os.path.basename(page_list[page_number - 1])
+            first_page = os.path.basename(page_list[0])
+        new_previous = nav_dict["previous"].replace("(PREVIOUS)", previous_page)
         formatted_nav = formatted_nav.replace(nav_dict["previous"], new_previous)
-        new_first = nav_dict["first"].replace("(FIRST)", os.path.basename(page_list[0]))
+        new_first = nav_dict["first"].replace("(FIRST)", first_page)
         formatted_nav = formatted_nav.replace(nav_dict["first"], new_first)
     if not last_page:
-        new_nxt = nav_dict["nxt"].replace("(NEXT)", os.path.basename(page_list[page_number + 1]))
+        if absolute_paths:
+            next_page = page_list[page_number + 1]
+            last_page = page_list[-1] 
+        else:
+            next_page = os.path.basename(page_list[page_number + 1])
+            last_page = os.path.basename(page_list[-1])
+        new_nxt = nav_dict["nxt"].replace("(NEXT)", next_page)
         formatted_nav = formatted_nav.replace(nav_dict["nxt"], new_nxt)
-        new_last = nav_dict["last"].replace("(LAST)", os.path.basename(page_list[len(page_list) - 1]))
+        new_last = nav_dict["last"].replace("(LAST)", last_page)
         formatted_nav = formatted_nav.replace(nav_dict["last"], new_last)
     return formatted_nav
 
